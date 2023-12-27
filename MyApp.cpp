@@ -87,7 +87,8 @@ std::vector<float> CMyApp::GenerateHeightMap() {
 	{
 		for (int x = 0; x < 128; x++)
 		{
-			noiseData[index++] = noise.GetNoise((float)x, (float)y);
+			float noiseValue = noise.GetNoise((float)x, (float)y);
+			noiseData[index++] = (noiseValue + 1) / 2; // hogy a generált értékek 0 és 1 között legyenek
 		}
 	}
 	return noiseData;

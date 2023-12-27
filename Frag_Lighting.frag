@@ -42,6 +42,8 @@ uniform float Shininess = 1.0;
 				pow(alap, kitevő);
 */
 
+uniform sampler2D heightMapTexture;
+
 void main()
 {
 	// A fragment normálvektora
@@ -92,5 +94,5 @@ void main()
 
 	// normal vector debug:
 	// fs_out_col = vec4( normal * 0.5 + 0.5, 1.0 );
-	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * (1.0, 0.7, 0.5);
+	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * texture(heightMapTexture, vs_out_tex);
 }

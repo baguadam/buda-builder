@@ -19,10 +19,11 @@ uniform sampler2D heightMapTexture;
 
 void main()
 {
-   float height = texture(heightMapTexture, vs_in_tex).r;
+   float scaleValue = 0.9;
+   float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
 
-   gl_Position = viewProj * world * vec4(vs_in_pos.x, vs_in_pos.y + height * 2, vs_in_pos.z, 1);
-   vs_out_pos = (world  * vec4(vs_in_pos.x, vs_in_pos.y + height * 2, vs_in_pos.z, 1)).xyz;
+   gl_Position = viewProj * world * vec4(vs_in_pos.x, vs_in_pos.y + height, vs_in_pos.z, 1);
+   vs_out_pos = (world  * vec4(vs_in_pos.x, vs_in_pos.y + height, vs_in_pos.z, 1)).xyz;
    vs_out_norm = (worldIT * vec4(vs_in_norm, 0)).xyz;
 
    vs_out_tex = vs_in_tex;
