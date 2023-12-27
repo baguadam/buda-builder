@@ -89,8 +89,10 @@
     <ClCompile Include="includes\GLUtils.cpp" />
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
+    <ClCompile Include="PerlinNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="includes\FastNoiseLite.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />
@@ -103,8 +105,7 @@
     <None Include="Frag_Lighting.frag" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\color_checkerboard.png" />
-    <Image Include="Assets\filipp.jpg" />
+    <Image Include="Assets\board.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -45,10 +45,19 @@ public:
 	void Resize(int, int);
 protected:
 	void SetupDebugCallback();
+	std::vector<float> GenerateHeightMap();
+	void InitHeightMap();
 
 	//
 	// Adat változók
 	//
+	// A parametrikus felülettel kapcsolatos változók
+	static constexpr int       TABLE_RESOLUTION = 512;
+	static constexpr float     TABLE_SIZE = 50.0f;
+	static constexpr glm::vec3 TABLE_POS = glm::vec3(0.0f, -30.0f, 0.0f);
+
+	// heightmap
+	std::vector<float> noiseData;
 
 	float m_ElapsedTimeInSec = 0.0f;
 
@@ -89,7 +98,7 @@ protected:
 
 	// Geometriával kapcsolatos változók
 
-	OGLObject m_surfaceGPU = {};
+	OGLObject m_paramSurfaceGPU = {};
 
 	// Geometria inicializálása, és törtlése
 	void InitGeometry();
@@ -97,7 +106,8 @@ protected:
 
 	// Textúrázás, és változói
 
-	GLuint m_TextureID = 0;
+	GLuint m_paramSurfaceTextureID = 0;
+	GLuint m_heightMapTexture = 0;
 
 	void InitTextures();
 	void CleanTextures();

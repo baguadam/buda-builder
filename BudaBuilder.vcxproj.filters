@@ -42,6 +42,9 @@
     <ClCompile Include="includes\ObjParser.cpp">
       <Filter>GL Utils</Filter>
     </ClCompile>
+    <ClCompile Include="PerlinNoise.cpp">
+      <Filter>GL Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -62,6 +65,9 @@
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp">
       <Filter>GL Utils</Filter>
     </ClInclude>
+    <ClInclude Include="includes\FastNoiseLite.h">
+      <Filter>GL Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Vert_PosNormTex.vert">
@@ -72,10 +78,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\color_checkerboard.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\filipp.jpg">
+    <Image Include="Assets\board.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

@@ -4,6 +4,7 @@
 #include "ParametricSurfaceMesh.hpp"
 
 #include <imgui.h>
+#include <FastNoiseLite.h>
 
 CMyApp::CMyApp()
 {
@@ -39,115 +40,26 @@ void CMyApp::CleanShaders()
 }
 
 // Nyers parameterek
-struct Param
+struct ParamPlane
 {
 	glm::vec3 GetPos( float u, float v ) const noexcept
 	{
-		return glm::vec3( u, v, 0.0f );
+		return glm::vec3(-u, 0.0f, v);
 	}
 	glm::vec3 GetNorm( float u, float v ) const noexcept
 	{
-		return glm::vec3( 0.0,0.0,1.0 );
+		return glm::vec3(0.0, 1.0f, 0.0);
 	}
 	glm::vec2 GetTex( float u, float v ) const noexcept
 	{
-		return glm::vec2( u, v );
-	}
-};
-
-struct Sphere
-{
-	float r;
-	Sphere(float _r = 1.f) : r(_r) { }
-
-	glm::vec3 GetPos(float u, float v) const noexcept
-	{
-		u *= glm::two_pi<float>();
-		v *= glm::pi<float>();
-
-		return glm::vec3(
-			r * sinf(v) * cosf(u),
-			r * cosf(v),
-			r * sinf(v) * sinf(u)
-		);
-	}
-	glm::vec3 GetNorm(float u, float v) const noexcept
-	{
-		u *= glm::two_pi<float>();
-		v *= glm::pi<float>();
-
-		return glm::vec3(
-			sinf(v) * cosf(u),
-			cosf(v),
-			sinf(v) * sinf(u)
-		);
-	}
-	glm::vec2 GetTex(float u, float v) const noexcept
-	{
 		return glm::vec2(u, v);
 	}
 };
 
-struct Torus
-{
-	float a, b;
-	Torus(float _a = 1.0f, float _b = 2.0f) : a(_a), b(_b) { }
-
-	glm::vec3 GetPos(float u, float v) const noexcept
-	{
-		u *=  glm::two_pi<float>();
-		v *= -glm::two_pi<float>();
-		return glm::vec3(
-			(a * cosf(v) + b) * cosf(u),
-			 a * sinf(v),
-			(a * cosf(v) + b) * sinf(u)
-		);
-	}
-	glm::vec3 GetNorm(float u, float v) const noexcept
-	{
-		glm::vec3 du = GetPos(u + 0.01f, v) - GetPos(u - 0.01f, v);
-		glm::vec3 dv = GetPos(u, v + 0.01f) - GetPos(u, v - 0.01f);
-
-		return glm::normalize(glm::cross(du, dv));
-	}
-	glm::vec2 GetTex(float u, float v) const noexcept
-	{
-		return glm::vec2(u, v);
-	}
-};
-
-struct SurfaceOfRevolution
-{
-	float ProfileFunc(float t) const noexcept
-	{
-		// return 1.0f; // Henger
-		return 1 - t;
-	}
-
-	glm::vec3 GetPos(float u, float v) const noexcept
-	{
-		u *= glm::two_pi<float>();
-
-		float r = ProfileFunc(v);
-
-		return glm::vec3(
-			r * cosf(u),
-			v,
-			- r * sinf(u)
-		);
-	}
-	glm::vec3 GetNorm(float u, float v) const noexcept
-	{
-		return glm::vec3(0.0, 0.0, 1.0);
-	}
-	glm::vec2 GetTex(float u, float v) const noexcept
-	{
-		return glm::vec2(u, v);
-	}
-};
 
 void CMyApp::InitGeometry()
 {
+	// hegihtmap inicializálása
 
 	const std::initializer_list<VertexAttributeDescriptor> vertexAttribList =
 	{
@@ -156,26 +68,56 @@ void CMyApp::InitGeometry()
 		{ 2, offsetof( Vertex, texcoord ), 2, GL_FLOAT },
 	};
 
-	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh( Sphere() );
-	m_surfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
+	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
+	m_paramSurfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
 }
 
 void CMyApp::CleanGeometry()
 {
-	CleanOGLObject( m_surfaceGPU );
+	CleanOGLObject( m_paramSurfaceGPU );
+}
+
+std::vector<float> CMyApp::GenerateHeightMap() {
+	FastNoiseLite noise;
+	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	// Gather noise data
+	std::vector<float> noiseData(TABLE_RESOLUTION * TABLE_RESOLUTION);
+	int index = 0;
+	for (int y = 0; y < 128; y++)
+	{
+		for (int x = 0; x < 128; x++)
+		{
+			noiseData[index++] = noise.GetNoise((float)x, (float)y);
+		}
+	}
+	return noiseData;
+}
+
+void CMyApp::InitHeightMap() {
+	std::vector<float> noiseData = GenerateHeightMap(); // a legenerált a heightmap
+
+	glGenTextures(1, &m_heightMapTexture);
+	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 128, 128, 0, GL_RED, GL_FLOAT, noiseData.data());
+	SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void CMyApp::InitTextures()
 {
 	// diffuse texture
-	glGenTextures( 1, &m_TextureID );
-	TextureFromFile( m_TextureID, "Assets/filipp.jpg" );
-	SetupTextureSampling( GL_TEXTURE_2D, m_TextureID );
+	glGenTextures( 1, &m_paramSurfaceTextureID );
+	TextureFromFile( m_paramSurfaceTextureID, "Assets/board.png" );
+	SetupTextureSampling( GL_TEXTURE_2D, m_paramSurfaceTextureID );
+
+	// heightmap
+	InitHeightMap();
 }
 
 void CMyApp::CleanTextures()
 {
-	glDeleteTextures( 1, &m_TextureID );
+	glDeleteTextures( 1, &m_paramSurfaceTextureID );
+	glDeleteTextures(1, &m_heightMapTexture);
 }
 
 bool CMyApp::Init()
@@ -200,7 +142,7 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 7.0, 7.0),// honnan nézzük a színteret	   - eye
+		glm::vec3(0.0, 3.0, 7.0),// honnan nézzük a színteret	   - eye
 		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
 		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
 
@@ -229,15 +171,18 @@ void CMyApp::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// - VAO beállítása
-	glBindVertexArray( m_surfaceGPU.vaoID );
+	glBindVertexArray( m_paramSurfaceGPU.vaoID );
 
 	// - Textúrák beállítása, minden egységre külön
 	glActiveTexture( GL_TEXTURE0 );
-	glBindTexture( GL_TEXTURE_2D, m_TextureID );
+	glBindTexture( GL_TEXTURE_2D, m_heightMapTexture );
 
 	glUseProgram( m_programID );
 
 	glm::mat4 matWorld = glm::identity<glm::mat4>();
+
+	matWorld = glm::translate(matWorld, TABLE_POS)
+			 * glm::scale(matWorld, glm::vec3(TABLE_SIZE));
 
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
 	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
@@ -263,10 +208,10 @@ void CMyApp::Render()
 	glUniform1f( ul( "Shininess" ),	m_Shininess );
 
 	// - textúraegységek beállítása
-	glUniform1i( ul( "texImage" ), 0 );
+	glUniform1i( ul( "heightMapTexture" ), 0 );
 
 	glDrawElements( GL_TRIANGLES,    
-					m_surfaceGPU.count,			 
+					m_paramSurfaceGPU.count,			 
 					GL_UNSIGNED_INT,
 					nullptr );
 
