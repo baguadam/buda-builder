@@ -121,6 +121,7 @@ std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
 void CMyApp::InitHeightMap() {
 	std::vector<float> noiseData = GenerateHeightMap(); // a legenerált a heightmap
 
+	// Egycsatornás textúre létrehozása a heightmap-hez
 	glGenTextures(1, &m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, noiseData.data());
@@ -131,6 +132,7 @@ void CMyApp::InitHeightMap() {
 void CMyApp::InitSplatMap() {
 	std::vector<glm::vec4> splatMapData = GenerateSplatMap(); // a legenerált a splatmap
 
+	// Négycsatornsá textúre létrehozása a splatmap-hez
 	glGenTextures(1, &m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, splatMapData.data());
@@ -140,19 +142,38 @@ void CMyApp::InitSplatMap() {
 
 void CMyApp::InitTextures()
 {
-	// diffuse texture
-	glGenTextures( 1, &m_paramSurfaceTextureID );
-	TextureFromFile( m_paramSurfaceTextureID, "Assets/board.png" );
-	SetupTextureSampling( GL_TEXTURE_2D, m_paramSurfaceTextureID );
+	// diffuz texturák fájlból, ez a négy lesz interpolálva
+	glGenTextures( 1, &m_brownTexture );
+	TextureFromFile( m_brownTexture, "Assets/brown.jpg" );
+	SetupTextureSampling( GL_TEXTURE_2D, m_brownTexture );
+
+	glGenTextures(1, &m_grassTexture);
+	TextureFromFile(m_grassTexture, "Assets/grass.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_grassTexture);
+
+	glGenTextures(1, &m_greenTexture);
+	TextureFromFile(m_greenTexture, "Assets/green.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_greenTexture);
+
+	glGenTextures(1, &m_sandTexture);
+	TextureFromFile(m_sandTexture, "Assets/homok.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_sandTexture);
 
 	// heightmap
 	InitHeightMap();
+
+	// splatmap
+	InitSplatMap();
 }
 
 void CMyApp::CleanTextures()
 {
-	glDeleteTextures( 1, &m_paramSurfaceTextureID );
+	glDeleteTextures(1, &m_brownTexture);
+	glDeleteTextures(1, &m_greenTexture);
+	glDeleteTextures(1, &m_grassTexture);
+	glDeleteTextures(1, &m_sandTexture);
 	glDeleteTextures(1, &m_heightMapTexture);
+	glDeleteTextures(1, &m_splatMapTexture);
 }
 
 bool CMyApp::Init()
@@ -209,13 +230,29 @@ void CMyApp::Render()
 	glBindVertexArray( m_paramSurfaceGPU.vaoID );
 
 	// - Textúrák beállítása, minden egységre külön
-	glActiveTexture( GL_TEXTURE0 );
-	glBindTexture( GL_TEXTURE_2D, m_heightMapTexture );
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, m_greenTexture);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, m_sandTexture);
 
 	glUseProgram( m_programID );
 
-	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
+	glUniform1i(ul("heightMapTexture"), 0); // heightmap leküldése a 0-s csatornán
+	glUniform1i(ul("splatMapTexture"), 1);  // splatmap leküldése az 1-es csatornán
+	glUniform1i(ul("brownTexture"), 2);  // splatmap leküldése az 1-es csatornán
+	glUniform1i(ul("greenTexture"), 3);  // splatmap leküldése az 1-es csatornán
+	glUniform1i(ul("grassTexture"), 4);  // splatmap leküldése az 1-es csatornán
+	glUniform1i(ul("sandTexture"), 5);  // splatmap leküldése az 1-es csatornán
 
+	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
 	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
 	glUniformMatrix4fv( ul( "viewProj" ), 1, GL_FALSE, glm::value_ptr( m_camera.GetViewProj() ) );
@@ -239,9 +276,6 @@ void CMyApp::Render()
 
 	glUniform1f( ul( "Shininess" ),	m_Shininess );
 
-	// - textúraegységek beállítása
-	glUniform1i( ul( "heightMapTexture" ), 0 );
-
 	glDrawElements( GL_TRIANGLES,    
 					m_paramSurfaceGPU.count,			 
 					GL_UNSIGNED_INT,
@@ -251,8 +285,13 @@ void CMyApp::Render()
 	glUseProgram( 0 );
 
 	// - Textúrák kikapcsolása, minden egységre külön
-	glActiveTexture( GL_TEXTURE0 );
-	glBindTexture( GL_TEXTURE_2D, 0 );
+	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// VAO kikapcsolása
 	glBindVertexArray( 0 );

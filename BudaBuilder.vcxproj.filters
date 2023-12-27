@@ -81,5 +81,17 @@
     <Image Include="Assets\board.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\brown.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\grass.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\green.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\homok.jpg">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -106,6 +106,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\board.png" />
+    <Image Include="Assets\brown.jpg" />
+    <Image Include="Assets\grass.jpg" />
+    <Image Include="Assets\green.jpg" />
+    <Image Include="Assets\homok.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

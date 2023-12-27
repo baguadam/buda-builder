@@ -9,7 +9,11 @@ in vec2 vs_out_tex;
 out vec4 fs_out_col;
 
 // textúra mintavételező objektum
-uniform sampler2D texImage;
+uniform sampler2D splatMapTexture;
+uniform sampler2D brownTexture;
+uniform sampler2D greenTexture;
+uniform sampler2D grassTexture;
+uniform sampler2D sandTexture;
 
 uniform vec3 cameraPos;
 
@@ -31,18 +35,6 @@ uniform vec3 Kd = vec3( 1.0 );
 uniform vec3 Ks = vec3( 1.0 );
 
 uniform float Shininess = 1.0;
-
-/* segítség:
-	    - normalizálás: http://www.opengl.org/sdk/docs/manglsl/xhtml/normalize.xml
-	    - skaláris szorzat: http://www.opengl.org/sdk/docs/manglsl/xhtml/dot.xml
-	    - clamp: http://www.opengl.org/sdk/docs/manglsl/xhtml/clamp.xml
-		- reflect: http://www.opengl.org/sdk/docs/manglsl/xhtml/reflect.xml
-				reflect(beérkező_vektor, normálvektor);
-		- pow: http://www.opengl.org/sdk/docs/manglsl/xhtml/pow.xml
-				pow(alap, kitevő);
-*/
-
-uniform sampler2D heightMapTexture;
 
 void main()
 {
@@ -94,5 +86,17 @@ void main()
 
 	// normal vector debug:
 	// fs_out_col = vec4( normal * 0.5 + 0.5, 1.0 );
-	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * texture(heightMapTexture, vs_out_tex);
+
+	// kiszedjük az értékeket a splatMapTexture-ből
+	vec4 splatMapValues = texture(splatMapTexture, vs_out_tex);
+	// majd az arányokat figyelembe véve interpoláljuk a finalColor változóba a négy textúrát 
+	// mindegy egyes textúrát interpolálunk a feketével a megfelelő splatmap érték alapján,
+	// majd a visszakapott vec4-et hozzáadjuk a finalColorhoz
+	vec4 finalColor = vec4(0.0);
+	finalColor += mix(vec4(0.0), texture(brownTexture, vs_out_tex), splatMapValues.r);	
+	finalColor += mix(vec4(0.0), texture(greenTexture, vs_out_tex), splatMapValues.g);
+	finalColor += mix(vec4(0.0), texture(grassTexture, vs_out_tex), splatMapValues.b);
+	finalColor += mix(vec4(0.0), texture(sandTexture, vs_out_tex), splatMapValues.a);
+
+	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * finalColor;
 }

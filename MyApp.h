@@ -108,7 +108,10 @@ protected:
 
 	// Textúrázás, és változói
 
-	GLuint m_paramSurfaceTextureID = 0;
+	GLuint m_brownTexture = 0;
+	GLuint m_greenTexture = 0;
+	GLuint m_grassTexture = 0;
+	GLuint m_sandTexture = 0;
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;
 
