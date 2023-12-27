@@ -56,7 +56,7 @@ protected:
 	// A parametrikus felülettel kapcsolatos változók
 	static constexpr int       TABLE_RESOLUTION = 512;
 	static constexpr float     TABLE_SIZE = 50.0f;
-	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(500.0f, 1.0f, 500.0f);
+	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
 	// heightmap
 	std::vector<float> noiseData;
@@ -108,9 +108,12 @@ protected:
 
 	// Textúrázás, és változói
 
-	GLuint m_brownTexture = 0;
+	GLuint m_greenerGrass = 0;
 	GLuint m_greenTexture = 0;
 	GLuint m_grassTexture = 0;
+	GLuint m_seamlessGrassTexture = 0;
+	GLuint m_brownTexture = 0;
+	GLuint m_snowTexture = 0;
 	GLuint m_sandTexture = 0;
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;

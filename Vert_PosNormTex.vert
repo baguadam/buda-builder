@@ -17,7 +17,7 @@ uniform sampler2D heightMapTexture;
 
 vec3 GetPos(float u, float v)
 {
-	float scaleValue = 280;
+	float scaleValue = 220;
 	float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
 	return vec3(u, 0.0f + height, -v);
 }
@@ -32,11 +32,11 @@ vec3 GetNorm(float u, float v)
 
 void main()
 {
-   vec3 pos = GetPos(vs_in_tex.x, vs_in_tex.y);
+	vec3 pos = GetPos(vs_in_tex.x, vs_in_tex.y);
 
 	gl_Position = viewProj * world * vec4( pos, 1 );
 	vs_out_pos  = (world   * vec4(pos,  1)).xyz;
 	vs_out_norm = (worldIT * vec4(GetNorm(vs_in_tex.x, vs_in_tex.y), 0)).xyz;
 
-   vs_out_tex = vs_in_tex;
+	vs_out_tex = vs_in_tex;
 }

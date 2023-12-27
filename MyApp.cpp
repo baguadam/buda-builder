@@ -143,9 +143,9 @@ void CMyApp::InitSplatMap() {
 void CMyApp::InitTextures()
 {
 	// diffuz texturák fájlból, ez a négy lesz interpolálva
-	glGenTextures( 1, &m_brownTexture );
-	TextureFromFile( m_brownTexture, "Assets/brown.jpg" );
-	SetupTextureSampling( GL_TEXTURE_2D, m_brownTexture );
+	glGenTextures( 1, &m_greenerGrass );
+	TextureFromFile( m_greenerGrass, "Assets/greener_grass.jpg" );
+	SetupTextureSampling( GL_TEXTURE_2D, m_greenerGrass );
 
 	glGenTextures(1, &m_grassTexture);
 	TextureFromFile(m_grassTexture, "Assets/grass.jpg");
@@ -155,8 +155,20 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_greenTexture, "Assets/green.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_greenTexture);
 
+	glGenTextures(1, &m_seamlessGrassTexture);
+	TextureFromFile(m_seamlessGrassTexture, "Assets/seamless_grass.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_seamlessGrassTexture);
+
+	glGenTextures(1, &m_brownTexture);
+	TextureFromFile(m_brownTexture, "Assets/brown.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_brownTexture);
+
+	glGenTextures(1, &m_snowTexture);
+	TextureFromFile(m_snowTexture, "Assets/snow.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_snowTexture);
+
 	glGenTextures(1, &m_sandTexture);
-	TextureFromFile(m_sandTexture, "Assets/homok.jpg");
+	TextureFromFile(m_sandTexture, "Assets/sand.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_sandTexture);
 
 	// heightmap
@@ -168,12 +180,13 @@ void CMyApp::InitTextures()
 
 void CMyApp::CleanTextures()
 {
-	glDeleteTextures(1, &m_brownTexture);
+	glDeleteTextures(1, &m_greenerGrass);
 	glDeleteTextures(1, &m_greenTexture);
 	glDeleteTextures(1, &m_grassTexture);
-	glDeleteTextures(1, &m_sandTexture);
+	glDeleteTextures(1, &m_seamlessGrassTexture);
 	glDeleteTextures(1, &m_heightMapTexture);
 	glDeleteTextures(1, &m_splatMapTexture);
+	glDeleteTextures(1, &m_brownTexture);
 }
 
 bool CMyApp::Init()
@@ -235,22 +248,25 @@ void CMyApp::Render()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
+	glBindTexture(GL_TEXTURE_2D, m_greenerGrass);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, m_greenTexture);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, m_sandTexture);
+	glBindTexture(GL_TEXTURE_2D, m_seamlessGrassTexture);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
 
 	glUseProgram( m_programID );
 
 	glUniform1i(ul("heightMapTexture"), 0); // heightmap leküldése a 0-s csatornán
 	glUniform1i(ul("splatMapTexture"), 1);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("brownTexture"), 2);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("greenTexture"), 3);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("grassTexture"), 4);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("sandTexture"), 5);  // splatmap leküldése az 1-es csatornán
+	glUniform1i(ul("greenerGrass"), 2);  
+	glUniform1i(ul("greenTexture"), 3);  
+	glUniform1i(ul("grassTexture"), 4);  
+	glUniform1i(ul("seamlessGrass"), 5);
+	glUniform1i(ul("brownTexture"), 6);
 
 	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );

@@ -90,7 +90,16 @@
     <Image Include="Assets\green.jpg">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\homok.jpg">
+    <Image Include="Assets\greener_grass.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\seamless_grass.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\sand.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\snow.jpg">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
