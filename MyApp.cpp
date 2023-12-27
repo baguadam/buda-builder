@@ -80,12 +80,12 @@ void CMyApp::CleanGeometry()
 std::vector<float> CMyApp::GenerateHeightMap() {
 	FastNoiseLite noise;
 	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-	// Gather noise data
+
 	std::vector<float> noiseData(TABLE_RESOLUTION * TABLE_RESOLUTION);
 	int index = 0;
-	for (int y = 0; y < 128; y++)
+	for (int y = 0; y < TABLE_RESOLUTION; y++)
 	{
-		for (int x = 0; x < 128; x++)
+		for (int x = 0; x < TABLE_RESOLUTION; x++)
 		{
 			float noiseValue = noise.GetNoise((float)x, (float)y);
 			noiseData[index++] = (noiseValue + 1) / 2; // hogy a generált értékek 0 és 1 között legyenek
@@ -94,13 +94,47 @@ std::vector<float> CMyApp::GenerateHeightMap() {
 	return noiseData;
 }
 
+std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
+	FastNoiseLite noise;
+	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+
+	std::vector<glm::vec4> splatMapData(TABLE_RESOLUTION * TABLE_RESOLUTION);
+	int index = 0;
+	for (int y = 0; y < TABLE_RESOLUTION; y++)
+	{
+		for (int x = 0; x < TABLE_RESOLUTION; x++)
+		{
+			float noiseValue1 = noise.GetNoise((float)x, (float)y);
+			float noiseValue2 = noise.GetNoise((float)(x + 1000), (float)(y + 1000));
+			float noiseValue3 = noise.GetNoise((float)(x + 2000), (float)(y + 2000));
+			float noiseValue4 = noise.GetNoise((float)(x + 3000), (float)(y + 3000));
+
+			// kiszámoljuk a generált értékek összegét, majd a kapott értékell leosztunk mindent, így
+			// normálva őket megfelelően, hogy az összegük mindig 1 legyen
+			float total = noiseValue1 + noiseValue2 + noiseValue3 + noiseValue4;
+			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), (noiseValue4 / total) };
+		}
+	}
+	return splatMapData;
+}
+
 void CMyApp::InitHeightMap() {
 	std::vector<float> noiseData = GenerateHeightMap(); // a legenerált a heightmap
 
 	glGenTextures(1, &m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 128, 128, 0, GL_RED, GL_FLOAT, noiseData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, noiseData.data());
 	SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void CMyApp::InitSplatMap() {
+	std::vector<glm::vec4> splatMapData = GenerateSplatMap(); // a legenerált a splatmap
+
+	glGenTextures(1, &m_splatMapTexture);
+	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, splatMapData.data());
+	SetupTextureSampling(GL_TEXTURE_2D, m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 

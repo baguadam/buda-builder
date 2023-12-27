@@ -46,7 +46,9 @@ public:
 protected:
 	void SetupDebugCallback();
 	std::vector<float> GenerateHeightMap();
+	std::vector<glm::vec4> GenerateSplatMap();
 	void InitHeightMap();
+	void InitSplatMap();
 
 	//
 	// Adat változók
@@ -108,6 +110,7 @@ protected:
 
 	GLuint m_paramSurfaceTextureID = 0;
 	GLuint m_heightMapTexture = 0;
+	GLuint m_splatMapTexture = 0;
 
 	void InitTextures();
 	void CleanTextures();
