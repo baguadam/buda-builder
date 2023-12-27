@@ -1,9 +1,7 @@
 #version 430
 
 // VBO-ból érkező változók
-layout( location = 0 ) in vec3 vs_in_pos;
-layout( location = 1 ) in vec3 vs_in_norm;
-layout( location = 2 ) in vec2 vs_in_tex;
+layout( location = 0 ) in vec2 vs_in_tex;
 
 // a pipeline-ban tovább adandó értékek
 out vec3 vs_out_pos;
@@ -17,14 +15,28 @@ uniform mat4 viewProj;
 
 uniform sampler2D heightMapTexture;
 
+vec3 GetPos(float u, float v)
+{
+	float scaleValue = 280;
+	float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
+	return vec3(u, 0.0f + height, -v);
+}
+
+vec3 GetNorm(float u, float v)
+{
+	vec3 du = GetPos(u + 0.01, v) - GetPos(u - 0.01, v);
+	vec3 dv = GetPos(u, v + 0.01) - GetPos(u, v - 0.01);
+
+	return normalize(cross(du, dv));
+}
+
 void main()
 {
-   float scaleValue = 0.9;
-   float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
+   vec3 pos = GetPos(vs_in_tex.x, vs_in_tex.y);
 
-   gl_Position = viewProj * world * vec4(vs_in_pos.x, vs_in_pos.y + height, vs_in_pos.z, 1);
-   vs_out_pos = (world  * vec4(vs_in_pos.x, vs_in_pos.y + height, vs_in_pos.z, 1)).xyz;
-   vs_out_norm = (worldIT * vec4(vs_in_norm, 0)).xyz;
+	gl_Position = viewProj * world * vec4( pos, 1 );
+	vs_out_pos  = (world   * vec4(pos,  1)).xyz;
+	vs_out_norm = (worldIT * vec4(GetNorm(vs_in_tex.x, vs_in_tex.y), 0)).xyz;
 
    vs_out_tex = vs_in_tex;
 }

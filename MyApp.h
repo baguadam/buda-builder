@@ -54,7 +54,7 @@ protected:
 	// A parametrikus felülettel kapcsolatos változók
 	static constexpr int       TABLE_RESOLUTION = 512;
 	static constexpr float     TABLE_SIZE = 50.0f;
-	static constexpr glm::vec3 TABLE_POS = glm::vec3(0.0f, -30.0f, 0.0f);
+	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(500.0f, 1.0f, 500.0f);
 
 	// heightmap
 	std::vector<float> noiseData;

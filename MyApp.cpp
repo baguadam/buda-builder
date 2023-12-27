@@ -42,15 +42,17 @@ void CMyApp::CleanShaders()
 // Nyers parameterek
 struct ParamPlane
 {
-	glm::vec3 GetPos( float u, float v ) const noexcept
+	glm::vec3 GetPos(float u, float v) const noexcept
 	{
-		return glm::vec3(-u, 0.0f, v);
+		return glm::vec3(u, v, 0.0);
 	}
-	glm::vec3 GetNorm( float u, float v ) const noexcept
+
+	glm::vec3 GetNorm(float u, float v) const noexcept
 	{
-		return glm::vec3(0.0, 1.0f, 0.0);
+		return glm::vec3(0.0, 0.0, 1.0);
 	}
-	glm::vec2 GetTex( float u, float v ) const noexcept
+
+	glm::vec2 GetTex(float u, float v) const noexcept
 	{
 		return glm::vec2(u, v);
 	}
@@ -63,9 +65,7 @@ void CMyApp::InitGeometry()
 
 	const std::initializer_list<VertexAttributeDescriptor> vertexAttribList =
 	{
-		{ 0, offsetof( Vertex, position ), 3, GL_FLOAT },
-		{ 1, offsetof( Vertex, normal   ), 3, GL_FLOAT },
-		{ 2, offsetof( Vertex, texcoord ), 2, GL_FLOAT },
+		{ 0, offsetof( Vertex, texcoord ), 2, GL_FLOAT },
 	};
 
 	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
@@ -143,9 +143,9 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 3.0, 7.0),// honnan nézzük a színteret	   - eye
-		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
+		glm::vec3(0.0, 350.0, 0.0),	  // honnan nézzük a színteret	     - eye
+		glm::vec3(0.0, 300.0, 0.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 1.0,   0.0));  // felfelé mutató irány a világban - up
 
 	return true;
 }
@@ -180,10 +180,7 @@ void CMyApp::Render()
 
 	glUseProgram( m_programID );
 
-	glm::mat4 matWorld = glm::identity<glm::mat4>();
-
-	matWorld = glm::translate(matWorld, TABLE_POS)
-			 * glm::scale(matWorld, glm::vec3(TABLE_SIZE));
+	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
 
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
 	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
