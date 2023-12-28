@@ -107,6 +107,7 @@ void main()
 	// normal vector debug:
 	// fs_out_col = vec4( normal * 0.5 + 0.5, 1.0 );
 
+	// ************** TEXTÚRÁZÁS ******************
 	// kiszedjük az értékeket a splatMapTexture-ből
 	vec4 splatMapValues = texture(splatMapTexture, vs_out_tex);
 	// majd az arányokat figyelembe véve interpoláljuk a finalColor változóba a négy textúrát 
@@ -118,17 +119,21 @@ void main()
 	finalColor += mix(vec4(0.0), texture(grassTexture, vs_out_tex), splatMapValues.b);
 	finalColor += mix(vec4(0.0), texture(seamlessGrass, vs_out_tex), splatMapValues.a);
 
+	// ************** BARNA DOMBORZAT A MEREDEK HELYEKEN ******************
 	vec3 gradient = GetGradient(vs_out_tex.x, vs_out_tex.y); // irányvektor
 	float steepness = abs(dot(normal, gradient));			 // a normálvektor és az irányvektor skaláris szorzata a meredekség
-	float blend = smoothstep(0.80, 1.0, steepness);			 // ha a meredekség 0.7 és 1 között van, akkor ez lesz a blend értéke
 	vec4 brownColor = texture(brownTexture, vs_out_tex);	 // mintavételezünk a barna textúrából
+	float blend = smoothstep(0.9, 1.0, steepness);			 // ha a meredekség 0.7 és 1 között van, akkor ez lesz a blend értéke
 	finalColor = mix(finalColor, brownColor, blend);	     // interpoláljuk a finalColorral, a blend 0 lesz, ha 0.95 alatt van
 
+	// ************** HÓ ÉS HOMOK TEXTÚRÁK *********************
 	float height = texture(heightMapTexture, vs_out_tex).r;
-
 	vec4 snowColor = texture(snowTexture, vs_out_tex);
-	float snowBlend = smoothstep(0.6, 1.0, height);
+	vec4 sandColor = texture(sandTexture, vs_out_tex);
+	float snowBlend = smoothstep(0.75, 0.80, height);
+	float sandBlend = 1.0 - smoothstep(0.15, 0.2, height); // kivonjuk 1-ből, hogy ha magasabban vagyunk, mint a határ, 0 legyen
 
+	finalColor = mix(finalColor, sandColor, sandBlend);
 	finalColor = mix(finalColor, snowColor, snowBlend);
 	
 	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * finalColor;
