@@ -102,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Frag_Building.frag" />
+    <None Include="Frag_FBO.frag" />
     <None Include="Vert_Building.vert" />
     <None Include="Vert_PosNormTex.vert" />
     <None Include="Frag_Lighting.frag" />

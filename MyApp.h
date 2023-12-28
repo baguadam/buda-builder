@@ -57,7 +57,7 @@ protected:
 	GLuint m_depthBuffer;				// FBO Mélységbuffer textúra azonosító
 	GLuint m_colorBuffer;				// FBO Színbuffer textúra azonosító
 	GLuint m_frameBuffer;				// FBO azonosító
-	glm::vec3 m_data = glm::vec3(0.0);  // itt fogjuk eltárolni az olvasott koordináta-hármast
+	glm::vec3* m_data;  // itt fogjuk eltárolni az olvasott koordináta-hármast
 
 	//
 	// Adat változók
@@ -87,6 +87,7 @@ protected:
 	// shaderekhez szükséges változók
 	GLuint m_programID  = 0; // shaderek programja
 	GLuint m_buildingID = 0;
+	GLuint m_FBOID = 0;
 
 	// Fényforrás- ...
 	glm::vec4 m_lightPos = glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f );
