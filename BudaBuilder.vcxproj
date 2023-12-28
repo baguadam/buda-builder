@@ -112,6 +112,7 @@
     <Image Include="Assets\grass.jpg" />
     <Image Include="Assets\green.jpg" />
     <Image Include="Assets\greener_grass.jpg" />
+    <Image Include="Assets\House1_Diffuse.png" />
     <Image Include="Assets\sand.jpg" />
     <Image Include="Assets\seamless_grass.jpg" />
     <Image Include="Assets\snow.jpg" />

@@ -119,7 +119,7 @@ protected:
 	GLuint m_brownTexture = 0;
 	GLuint m_snowTexture = 0;
 	GLuint m_sandTexture = 0;
-	GLuint m_boardTexture = 0;
+	GLuint m_houseTexture = 0;
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;
 
