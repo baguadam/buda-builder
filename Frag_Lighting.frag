@@ -16,6 +16,8 @@ uniform sampler2D greenTexture;
 uniform sampler2D grassTexture;
 uniform sampler2D seamlessGrass;
 uniform sampler2D brownTexture;
+uniform sampler2D snowTexture;
+uniform sampler2D sandTexture;
 
 uniform vec3 cameraPos;
 
@@ -40,9 +42,6 @@ uniform float Shininess = 1.0;
 
 vec3 GetGradient(float u, float v)
 {	
-   // mintacételezünk az adott pontban a heightmapból
-   float height = texture(heightMapTexture, vec2(u, v)).r;
-   
    // elmozdulva a heightmapen a lenti irányokba, megnézzük, hogyan változik a mintavételezett érték
    float heightRight = texture(heightMapTexture, vec2(u + 0.01, v)).r;
    float heightLeft = texture(heightMapTexture, vec2(u - 0.01, v)).r;
@@ -56,7 +55,6 @@ vec3 GetGradient(float u, float v)
 
    return normalize(gradient);
 }
-
 
 void main()
 {
@@ -126,5 +124,12 @@ void main()
 	vec4 brownColor = texture(brownTexture, vs_out_tex);	 // mintavételezünk a barna textúrából
 	finalColor = mix(finalColor, brownColor, blend);	     // interpoláljuk a finalColorral, a blend 0 lesz, ha 0.95 alatt van
 
+	float height = texture(heightMapTexture, vs_out_tex).r;
+
+	vec4 snowColor = texture(snowTexture, vs_out_tex);
+	float snowBlend = smoothstep(0.6, 1.0, height);
+
+	finalColor = mix(finalColor, snowColor, snowBlend);
+	
 	fs_out_col = vec4( Ambient+Diffuse+Specular, 1.0 ) * finalColor;
 }

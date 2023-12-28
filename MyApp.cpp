@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 #include <FastNoiseLite.h>
+#include <iostream>
 
 CMyApp::CMyApp()
 {
@@ -91,6 +92,7 @@ std::vector<float> CMyApp::GenerateHeightMap() {
 			noiseData[index++] = (noiseValue + 1) / 2; // hogy a generált értékek 0 és 1 között legyenek
 		}
 	}
+
 	return noiseData;
 }
 
@@ -187,6 +189,8 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_heightMapTexture);
 	glDeleteTextures(1, &m_splatMapTexture);
 	glDeleteTextures(1, &m_brownTexture);
+	glDeleteTextures(1, &m_snowTexture);
+	glDeleteTextures(1, &m_sandTexture);
 }
 
 bool CMyApp::Init()
@@ -257,6 +261,10 @@ void CMyApp::Render()
 	glBindTexture(GL_TEXTURE_2D, m_seamlessGrassTexture);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, m_snowTexture);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, m_sandTexture);
 
 	glUseProgram( m_programID );
 
@@ -267,6 +275,8 @@ void CMyApp::Render()
 	glUniform1i(ul("grassTexture"), 4);  
 	glUniform1i(ul("seamlessGrass"), 5);
 	glUniform1i(ul("brownTexture"), 6);
+	glUniform1i(ul("snowTexture"), 7);
+	glUniform1i(ul("sandTexture"), 8);
 
 	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
@@ -307,6 +317,9 @@ void CMyApp::Render()
 	glActiveTexture(GL_TEXTURE3);
 	glActiveTexture(GL_TEXTURE4);
 	glActiveTexture(GL_TEXTURE5);
+	glActiveTexture(GL_TEXTURE6);
+	glActiveTexture(GL_TEXTURE7);
+	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// VAO kikapcsolása
