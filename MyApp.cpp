@@ -33,11 +33,14 @@ void CMyApp::InitShaders()
 	m_programID = glCreateProgram();
 	AssembleProgram( m_programID, "Vert_PosNormTex.vert", "Frag_Lighting.frag" );
 
+	m_buildingID = glCreateProgram();
+	AssembleProgram(m_buildingID, "Vert_Building.vert", "Frag_Building.frag");
 }
 
 void CMyApp::CleanShaders()
 {
-	glDeleteProgram( m_programID );
+	glDeleteProgram(m_programID);
+	glDeleteProgram(m_buildingID);
 }
 
 // Nyers parameterek
@@ -71,11 +74,70 @@ void CMyApp::InitGeometry()
 
 	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
 	m_paramSurfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
+
+	// ************************* FLATHOUSE **********************************
+	const std::initializer_list<VertexAttributeDescriptor> buildingVertexAttribList =
+	{
+		{ 0, offsetof(Vertex, position), 3, GL_FLOAT },
+		{ 1, offsetof(Vertex, normal),   3, GL_FLOAT },
+		{ 2, offsetof(Vertex, texcoord), 2, GL_FLOAT },
+	};
+
+	MeshObject<Vertex> flatMeshCPU;
+
+	flatMeshCPU.vertexArray =
+	{
+		{ glm::vec3(-1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 0.0) },
+		{ glm::vec3( 1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(1.0, 0.0) },
+		{ glm::vec3(-1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 1.0) },
+		{ glm::vec3( 1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(1.0, 1.0) },
+
+		{ glm::vec3(1, -1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
+		{ glm::vec3(1, -1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(1.0, 0.0) },
+		{ glm::vec3(1,  1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
+		{ glm::vec3(1,  1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(1.0, 1.0) },
+
+		{ glm::vec3( 1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 0.0) },
+		{ glm::vec3(-1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(1.0, 0.0) },
+		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 1.0) },
+		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(1.0, 1.0) },
+
+		{ glm::vec3(-1, -1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
+		{ glm::vec3(-1, -1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(1.0, 0.0) },
+		{ glm::vec3(-1,  1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(1.0, 1.0) },
+		{ glm::vec3(-1,  1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
+
+		{ glm::vec3(-1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.0, 0.0) },
+		{ glm::vec3( 1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 0.0) },
+		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 1.0) },
+		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.0, 1.0) },
+	};
+
+	flatMeshCPU.indexArray =
+	{
+		0, 1, 2,
+		1, 3, 2,
+
+		4, 5, 6,
+		5, 7, 6,
+
+		8, 9,  10,
+		9, 11, 10,
+
+		12, 13, 14,
+		13, 15, 14,
+
+		16, 17, 18,
+		17, 19, 18
+	};
+
+	m_flatHoustGPU = CreateGLObjectFromMesh(flatMeshCPU, buildingVertexAttribList);
 }
 
 void CMyApp::CleanGeometry()
 {
-	CleanOGLObject( m_paramSurfaceGPU );
+	CleanOGLObject(m_paramSurfaceGPU);
+	CleanOGLObject(m_flatHoustGPU);
 }
 
 std::vector<float> CMyApp::GenerateHeightMap() {
@@ -173,6 +235,10 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_sandTexture, "Assets/sand.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_sandTexture);
 
+	glGenTextures(1, &m_boardTexture);
+	TextureFromFile(m_boardTexture, "Assets/board.png");
+	SetupTextureSampling(GL_TEXTURE_2D, m_boardTexture);
+
 	// heightmap
 	InitHeightMap();
 
@@ -191,6 +257,7 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_brownTexture);
 	glDeleteTextures(1, &m_snowTexture);
 	glDeleteTextures(1, &m_sandTexture);
+	glDeleteTextures(1, &m_boardTexture);
 }
 
 bool CMyApp::Init()
@@ -215,9 +282,9 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 350.0, 0.0),	  // honnan nézzük a színteret	     - eye
-		glm::vec3(0.0, 300.0, 0.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0, 1.0,   0.0));  // felfelé mutató irány a világban - up
+		glm::vec3(0.0, 3.0, 3.0),	  // honnan nézzük a színteret	     - eye
+		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
 
 	return true;
 }
@@ -306,6 +373,32 @@ void CMyApp::Render()
 					m_paramSurfaceGPU.count,			 
 					GL_UNSIGNED_INT,
 					nullptr );
+
+	/***********************************/
+	/***********************************/
+	/************ BUILDING *************/
+
+	glBindVertexArray(m_flatHoustGPU.vaoID);
+
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_2D, m_greenerGrass);
+	
+	glUseProgram(m_buildingID);
+	
+	glUniform1i(ul("texImage"), 10);
+
+	matWorld = glm::mat4(1.0f) * glm::scale(BUILDING_SCALE);
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+				   m_flatHoustGPU.count,
+				   GL_UNSIGNED_INT,
+				   nullptr);
+
+	/***********************************/
+	/***********************************/
 
 	// shader kikapcsolasa
 	glUseProgram( 0 );

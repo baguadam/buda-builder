@@ -58,6 +58,8 @@ protected:
 	static constexpr float     TABLE_SIZE = 50.0f;
 	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
+	static constexpr glm::vec3 BUILDING_SCALE = glm::vec3(4.0f, 2.0f, 4.0f);
+
 	// heightmap
 	std::vector<float> noiseData;
 
@@ -74,7 +76,8 @@ protected:
 	GLint ul( const char* uniformName ) noexcept;
 
 	// shaderekhez szükséges változók
-	GLuint m_programID = 0; // shaderek programja
+	GLuint m_programID  = 0; // shaderek programja
+	GLuint m_buildingID = 0;
 
 	// Fényforrás- ...
 	glm::vec4 m_lightPos = glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f );
@@ -101,6 +104,7 @@ protected:
 	// Geometriával kapcsolatos változók
 
 	OGLObject m_paramSurfaceGPU = {};
+	OGLObject m_flatHoustGPU = {};
 
 	// Geometria inicializálása, és törtlése
 	void InitGeometry();
@@ -115,6 +119,7 @@ protected:
 	GLuint m_brownTexture = 0;
 	GLuint m_snowTexture = 0;
 	GLuint m_sandTexture = 0;
+	GLuint m_boardTexture = 0;
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;
 
