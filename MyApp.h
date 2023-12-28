@@ -49,6 +49,15 @@ protected:
 	std::vector<glm::vec4> GenerateSplatMap();
 	void InitHeightMap();
 	void InitSplatMap();
+	// FBO létrehozása
+	void CreateFrameBuffer(int width, int height);
+
+	// FBO-hoz szükséges változók
+	bool m_frameBufferCreated{ false };	// Korábban hoztunk már létre FBO-t?
+	GLuint m_depthBuffer;				// FBO Mélységbuffer textúra azonosító
+	GLuint m_colorBuffer;				// FBO Színbuffer textúra azonosító
+	GLuint m_frameBuffer;				// FBO azonosító
+	glm::vec3 m_data = glm::vec3(0.0);  // itt fogjuk eltárolni az olvasott koordináta-hármast
 
 	//
 	// Adat változók
