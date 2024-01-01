@@ -298,9 +298,9 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 200.0, 0.0),	  // honnan nézzük a színteret	     - eye
-		glm::vec3(0.0, 150.0, 0.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
+		glm::vec3(0.0, 200.0, 0.0),	       // honnan nézzük a színteret	     - eye
+		glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 1.0, 0.0));	       // felfelé mutató irány a világban - up
 
 	// FBO - kezdeti
 	CreateFrameBuffer(800, 600);
@@ -435,7 +435,6 @@ void CMyApp::Render()
 
 	for (auto pos : m_buildingPositionVector) {
 		RenderBuilding(pos);
-		std::cout << "x: " << pos.x << "y: " << pos.y << "z: " << pos.z << "\n";
 	}
 
 	/***********************************/
@@ -590,7 +589,7 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 
 	// kiolvassuk a framebufferből az adott pixelhez tartozó UV értékeket
 	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
-	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
+	glReadPixels(x, 600 - y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
 	float u = (*m_data).x;
 	float v = (*m_data).y;
 	glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
@@ -606,11 +605,6 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	if ((*m_data).z == 1) {
 		m_buildingPositionVector.push_back(glm::vec3(pos.x, height, pos.z)); // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
 	}
-
-	std::cout << "Meret: " << m_buildingPositionVector.size() << "\n";
-	std::cout << u << " " << v << " " << (*m_data).z << "\n";
-	std::cout << pos.x << " " << pos.y << " " << pos.z << "\n";
-	std::cout << height << "\n";
 }
 
 void CMyApp::MouseUp(const SDL_MouseButtonEvent& mouse)
