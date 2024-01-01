@@ -17,9 +17,9 @@ uniform sampler2D heightMapTexture;
 
 vec3 GetPos(float u, float v)
 {
-	float scaleValue = 220;
+	float scaleValue = 100;
 	float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
-	return vec3(u, 0.0f + height, -v);
+	return vec3(u, height, -v);
 }
 
 vec3 GetNorm(float u, float v)

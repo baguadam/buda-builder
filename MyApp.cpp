@@ -46,6 +46,7 @@ void CMyApp::CleanShaders()
 {
 	glDeleteProgram(m_programID);
 	glDeleteProgram(m_buildingID);
+	glDeleteProgram(m_FBOID);
 }
 
 // Nyers parameterek
@@ -53,7 +54,7 @@ struct ParamPlane
 {
 	glm::vec3 GetPos(float u, float v) const noexcept
 	{
-		return glm::vec3(u, v, 0.0);
+		return glm::vec3(u, 0, -v);
 	}
 
 	glm::vec3 GetNorm(float u, float v) const noexcept
@@ -198,12 +199,12 @@ std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
 }
 
 void CMyApp::InitHeightMap() {
-	std::vector<float> noiseData = GenerateHeightMap(); // a legenerált a heightmap
+	m_heightMapData = GenerateHeightMap(); // a legenerált a heightmap
 
 	// Egycsatornás textúre létrehozása a heightmap-hez
 	glGenTextures(1, &m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, noiseData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, m_heightMapData.data());
 	SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -297,8 +298,8 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 300.0, 0.0),	  // honnan nézzük a színteret	     - eye
-		glm::vec3(0.0, 280.0, 0.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 200.0, 0.0),	  // honnan nézzük a színteret	     - eye
+		glm::vec3(0.0, 150.0, 0.0),   // a színtér melyik pontját nézzük - at
 		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
 
 	// FBO - kezdeti
@@ -339,83 +340,21 @@ void CMyApp::Render()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, m_greenerGrass);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, m_greenTexture);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, m_seamlessGrassTexture);
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, m_snowTexture);
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, m_sandTexture);
 
 	glUseProgram( m_FBOID );
 
 	glUniform1i(ul("heightMapTexture"), 0); // heightmap leküldése a 0-s csatornán
 	glUniform1i(ul("splatMapTexture"), 1);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("greenerGrass"), 2);  
-	glUniform1i(ul("greenTexture"), 3);  
-	glUniform1i(ul("grassTexture"), 4);  
-	glUniform1i(ul("seamlessGrass"), 5);
-	glUniform1i(ul("brownTexture"), 6);
-	glUniform1i(ul("snowTexture"), 7);
-	glUniform1i(ul("sandTexture"), 8);
 
-	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
+	glm::mat4 matWorld = glm::scale(TABLE_SCALE);
 	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
 	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
 	glUniformMatrix4fv( ul( "viewProj" ), 1, GL_FALSE, glm::value_ptr( m_camera.GetViewProj() ) );
-
-	// - Fényforrások beállítása
-	glUniform3fv( ul( "cameraPos" ), 1, glm::value_ptr( m_camera.GetEye() ) );
-	glUniform4fv( ul( "lightPos" ),  1, glm::value_ptr( m_lightPos ) );
-
-	glUniform3fv( ul( "La" ),		 1, glm::value_ptr( m_La ) );
-	glUniform3fv( ul( "Ld" ),		 1, glm::value_ptr( m_Ld ) );
-	glUniform3fv( ul( "Ls" ),		 1, glm::value_ptr( m_Ls ) );
-
-	glUniform1f( ul( "lightConstantAttenuation"	 ), m_lightConstantAttenuation );
-	glUniform1f( ul( "lightLinearAttenuation"	 ), m_lightLinearAttenuation   );
-	glUniform1f( ul( "lightQuadraticAttenuation" ), m_lightQuadraticAttenuation);
-
-	// - Anyagjellemzők beállítása
-	glUniform3fv( ul( "Ka" ),		 1, glm::value_ptr( m_Ka ) );
-	glUniform3fv( ul( "Kd" ),		 1, glm::value_ptr( m_Kd ) );
-	glUniform3fv( ul( "Ks" ),		 1, glm::value_ptr( m_Ks ) );
-
-	glUniform1f( ul( "Shininess" ),	m_Shininess );
 
 	glDrawElements( GL_TRIANGLES,    
 					m_paramSurfaceGPU.count,			 
 					GL_UNSIGNED_INT,
 					nullptr );
-
-	/***********************************/
-	/***********************************/
-	/************ BUILDING *************/
-
-	glBindVertexArray(m_flatHoustGPU.vaoID);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
-	
-	glUseProgram(m_buildingID);
-	
-	glUniform1i(ul("texImage"), 0);
-
-	matWorld = glm::mat4(1.0f) * glm::scale(BUILDING_SCALE);
-	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
-	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
-	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
-
-	glDrawElements(GL_TRIANGLES,
-				   m_flatHoustGPU.count,
-				   GL_UNSIGNED_INT,
-				   nullptr);
 
 	/***********************************/
 	/***********************************/
@@ -494,24 +433,10 @@ void CMyApp::Render()
 	/***********************************/
 	/************ BUILDING *************/
 
-	glBindVertexArray(m_flatHoustGPU.vaoID);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
-
-	glUseProgram(m_buildingID);
-
-	glUniform1i(ul("texImage"), 0);
-
-	matWorld = glm::mat4(1.0f) * glm::scale(BUILDING_SCALE);
-	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
-	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
-	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
-
-	glDrawElements(GL_TRIANGLES,
-		m_flatHoustGPU.count,
-		GL_UNSIGNED_INT,
-		nullptr);
+	for (auto pos : m_buildingPositionVector) {
+		RenderBuilding(pos);
+		std::cout << "x: " << pos.x << "y: " << pos.y << "z: " << pos.z << "\n";
+	}
 
 	/***********************************/
 	/***********************************/
@@ -538,6 +463,37 @@ void CMyApp::Render()
 
 	// VAO kikapcsolása
 	glBindVertexArray( 0 );
+}
+
+void CMyApp::RenderBuilding(glm::vec3 buildingPosition) {
+	glBindVertexArray(m_flatHoustGPU.vaoID);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE) * glm::scale(BUILDING_SCALE);
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_flatHoustGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
 }
 
 void CMyApp::RenderGUI()
@@ -632,10 +588,29 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	SDL_GetMouseState(&x, &y); // kattintás koordinátáinak meghatározása
 	std::cout << x << " " << y << "\n";
 
+	// kiolvassuk a framebufferből az adott pixelhez tartozó UV értékeket
 	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
 	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
+	float u = (*m_data).x;
+	float v = (*m_data).y;
+	glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
 
-	std::cout << (*m_data).x << " " << (*m_data).y << "\n";
+	// kiolvassuk a magasságtérkép textúrájából, hogy az adott UV koordinátákhoz milyen magasság tartozik
+	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+	GLubyte* texData = new GLubyte[TABLE_RESOLUTION * TABLE_RESOLUTION];
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, texData);
+	int index = (int)(v * TABLE_RESOLUTION) * TABLE_RESOLUTION + (int)(u * TABLE_RESOLUTION);
+	float height = texData[index] / 255.0f * 100; // eltároljuk az oda tartozó magasságot
+	delete[] texData;
+
+	if ((*m_data).z == 1) {
+		m_buildingPositionVector.push_back(glm::vec3(pos.x, height, pos.z)); // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+	}
+
+	std::cout << "Meret: " << m_buildingPositionVector.size() << "\n";
+	std::cout << u << " " << v << " " << (*m_data).z << "\n";
+	std::cout << pos.x << " " << pos.y << " " << pos.z << "\n";
+	std::cout << height << "\n";
 }
 
 void CMyApp::MouseUp(const SDL_MouseButtonEvent& mouse)
