@@ -120,5 +120,8 @@
     <Image Include="Assets\House1_Diffuse.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\concrete.jpg">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -231,7 +231,7 @@ std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
 			// kiszámoljuk a generált értékek összegét, majd a kapott értékell leosztunk mindent, így
 			// normálva őket megfelelően, hogy az összegük mindig 1 legyen
 			float total = noiseValue1 + noiseValue2 + noiseValue3;
-			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), 1 };
+			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), 0 };
 		}
 	}
 
@@ -250,12 +250,12 @@ void CMyApp::InitHeightMap() {
 }
 
 void CMyApp::InitSplatMap() {
-	std::vector<glm::vec4> splatMapData = GenerateSplatMap(); // a legenerált a splatmap
+	m_splatMapData = GenerateSplatMap(); // a legenerált a splatmap
 
 	// Négycsatornsá textúre létrehozása a splatmap-hez
 	glGenTextures(1, &m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, splatMapData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, m_splatMapData.data());
 	SetupTextureSampling(GL_TEXTURE_2D, m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -291,6 +291,10 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_houseTexture, "Assets/House1_Diffuse.png");
 	SetupTextureSampling(GL_TEXTURE_2D, m_houseTexture);
 
+	glGenTextures(1, &m_concreteTexture);
+	TextureFromFile(m_concreteTexture, "Assets/concrete.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_concreteTexture);
+
 	// heightmap
 	InitHeightMap();
 
@@ -309,6 +313,7 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_snowTexture);
 	glDeleteTextures(1, &m_sandTexture);
 	glDeleteTextures(1, &m_houseTexture);
+	glDeleteTextures(1, &m_concreteTexture);
 }
 
 bool CMyApp::Init()
@@ -414,6 +419,8 @@ void CMyApp::Render()
 	glBindTexture(GL_TEXTURE_2D, m_greenTexture);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, m_concreteTexture);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
 	glActiveTexture(GL_TEXTURE7);
@@ -428,6 +435,7 @@ void CMyApp::Render()
 	glUniform1i(ul("greenerGrass"), 2);
 	glUniform1i(ul("greenTexture"), 3);
 	glUniform1i(ul("grassTexture"), 4);
+	glUniform1i(ul("concreteTexture"), 5);
 	glUniform1i(ul("brownTexture"), 6);
 	glUniform1i(ul("snowTexture"), 7);
 	glUniform1i(ul("sandTexture"), 8);
@@ -506,7 +514,7 @@ void CMyApp::RenderBuilding(glm::vec3 buildingPosition) {
 
 	glUniform1i(ul("texImage"), 0);
 
-	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE) * glm::scale(BUILDING_SCALE);
+	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * glm::scale(BUILDING_SCALE);
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -525,6 +533,93 @@ void CMyApp::RenderBuilding(glm::vec3 buildingPosition) {
 
 	// Shader kikapcsolása
 	glUseProgram(0);
+}
+
+void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv) {
+	/******************************************************/
+	/**************** KISIMÍTJUK A TALAJT *****************/
+	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
+	// u és v esetén megszorozzuk csak az adott koordinátákat a felbontással
+	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
+	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
+	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
+	int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION); 
+
+	// kiolvassuk az m_heightMapData-ból az adott koordinátákohoz tartozó értéket
+	float totalHeight = 0.0f;
+	int count = 0;
+
+	// az adott sugár mentén kiolvassuk az értéket a m_heightMapData tömbből
+	for (int i = - 2 * radiusPixels; i <= radiusPixels; ++i) {
+		for (int j = radiusPixels; j <= 3 * radiusPixels; ++j) {
+			// végigmenyünk a teljes sugár mentén
+			int x = uCoord + i;
+			int y = vCoord + j;
+
+			// biztonsági ellenőrzés
+			if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+				totalHeight += m_heightMapData[y * TABLE_RESOLUTION + x];
+				count++;
+			}
+		}
+	}
+
+	// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, 
+	// módosítjuk a megfelelő magasságértékeket az átlagra
+	if (count > 0) {
+		float averageHeight = totalHeight / static_cast<float>(count);
+
+		// ismét végigmegyünk a heightmap tömbön, módosítunk minden értéket az átlagoltra
+		for (int i = -2 * radiusPixels; i <= radiusPixels; ++i) {
+			for (int j = radiusPixels; j <= 3 * radiusPixels; ++j) {
+				// végigmegyünk a teljes sugár mentén
+				int x = uCoord + i;
+				int y = vCoord + j;
+
+				// biztonsági ellenőrzés
+				if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+					m_heightMapData[y * TABLE_RESOLUTION + x] = averageHeight;
+				}
+			}
+		}
+
+		// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
+		glGenTextures(1, &m_heightMapTexture);
+		glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, m_heightMapData.data());
+		SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+}
+
+void CMyApp::PlaceConcreteUnderBuilding(glm::vec2 uv) {
+	/******************************************************/
+	/**************** BETONT HELYEZÜNK LE *****************/
+	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
+	// u és v esetén megszorozzuk csak az adott koordinátákat a felbontással
+	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
+	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
+	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
+	int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION);
+
+	// ismét végigmegyünk a splatmapen, kettő sugarú környezetben, majd módosítjuk a megfelelő értékeket
+	for (int i = - 2 * radiusPixels - 2; i <= radiusPixels + 2; ++i) {
+		for (int j = radiusPixels - 2; j <= 3 * radiusPixels + 2; ++j) {
+			// végigmegyünk a teljes sugár mentén
+			int x = uCoord + i;
+			int y = vCoord + j;
+
+			// biztonsági ellenőrzés, majd kinullázzuk az első három csatornát, a negyediket egyre állítjuk
+			if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+				m_splatMapData[y * TABLE_RESOLUTION + x] = { 0.0, 0.0, 0.0, 1.0, };
+			}
+		}
+	}
+
+	// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
+	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TABLE_RESOLUTION, TABLE_RESOLUTION, GL_RGBA, GL_FLOAT, m_splatMapData.data());
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void CMyApp::RenderGUI()
@@ -631,62 +726,14 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	GLubyte* texData = new GLubyte[TABLE_RESOLUTION * TABLE_RESOLUTION];
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, texData);
 	int index = (int)(v * TABLE_RESOLUTION) * TABLE_RESOLUTION + (int)(u * TABLE_RESOLUTION);
-	float height = texData[index] / 255.0f * SCALE_VALUE; // eltároljuk az oda tartozó magasságot, a kilvasott értéket megszorozzuk a max. magassággal
+	float height = texData[index] / 255.0f * SCALE_VALUE; // eltároljuk az oda tartozó magasságot, a kiolvasott értéket megszorozzuk a max. magassággal
 	delete[] texData;
 
 	if ((*m_data).z == 1) {
 		m_buildingPositionVector.push_back(glm::vec3(pos.x, height, pos.z)); // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
 
-		/******************************************************/
-		/**************** KISIMÍTJUK A TALAJT *****************/
-		// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
-		int uCoord = static_cast<int>(u * TABLE_RESOLUTION);
-		int vCoord = static_cast<int>(v * TABLE_RESOLUTION);
-		int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION);
-
-		// kiolvassuk az m_heightMapData-ból az adott koordinátákohoz tartozó értéket
-		float totalHeight = 0.0f;
-		int count = 0;
-
-		// az adott sugár mentén kiolvassuk az értéket a m_heightMapData tömbből
-		for (int i = -radiusPixels; i <= radiusPixels; ++i) {
-			for (int j = -radiusPixels; j <= radiusPixels; ++j) {
-				int x = uCoord + i;
-				int y = vCoord + j;
-
-				if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
-					totalHeight += m_heightMapData[y * TABLE_RESOLUTION + x];
-					count++;
-				}
-			}
-		}
-
-		std::cout << "TOTAL: " << totalHeight << '\n';
-		std::cout << "COUNT: " << count << '\n';
-
-		// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, módosítjuk a megfelelő magasságértékeket
-		// az átlagra
-		if (count > 0) {
-			float averageHeight = totalHeight / static_cast<float>(count);
-			std::cout << "AVERAGE: " << averageHeight << '\n';
-
-			// Update the heightmap values for the determined area
-			for (int i = -radiusPixels; i <= radiusPixels; ++i) {
-				for (int j = -radiusPixels; j <= radiusPixels; ++j) {
-					int x = uCoord + i;
-					int y = vCoord + j;
-
-					if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
-						m_heightMapData[y * TABLE_RESOLUTION + x] = averageHeight;
-					}
-				}
-			}
-
-			// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
-			glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TABLE_RESOLUTION, TABLE_RESOLUTION, GL_RED, GL_FLOAT, m_heightMapData.data());
-			glBindTexture(GL_TEXTURE_2D, 0);
-		}
+		FlattenTerrainUnderBuilding(glm::vec2(u, v)); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
+		PlaceConcreteUnderBuilding(glm::vec2(u, v));  // betont helyezünk le az épület alá
 	}
 }
 

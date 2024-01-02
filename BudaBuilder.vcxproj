@@ -112,6 +112,7 @@
   <ItemGroup>
     <Image Include="Assets\board.png" />
     <Image Include="Assets\brown.jpg" />
+    <Image Include="Assets\concrete.jpg" />
     <Image Include="Assets\grass.jpg" />
     <Image Include="Assets\green.jpg" />
     <Image Include="Assets\greener_grass.jpg" />

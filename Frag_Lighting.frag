@@ -14,6 +14,7 @@ uniform sampler2D splatMapTexture;
 uniform sampler2D greenerGrass;
 uniform sampler2D greenTexture;
 uniform sampler2D grassTexture;
+uniform sampler2D concreteTexture;
 uniform sampler2D brownTexture;
 uniform sampler2D snowTexture;
 uniform sampler2D sandTexture;
@@ -113,9 +114,10 @@ void main()
 	// mindegy egyes textúrát interpolálunk a feketével a megfelelő splatmap érték alapján,
 	// majd a visszakapott vec4-et hozzáadjuk a finalColorhoz
 	vec4 finalColor = vec4(0.0);
-	finalColor += mix(vec4(0.0), texture(greenerGrass, vs_out_tex), splatMapValues.r);	
-	finalColor += mix(vec4(0.0), texture(greenTexture, vs_out_tex), splatMapValues.g);
-	finalColor += mix(vec4(0.0), texture(grassTexture, vs_out_tex), splatMapValues.b);
+	finalColor += mix(vec4(0.0), texture(greenerGrass, vs_out_tex),    splatMapValues.r);	
+	finalColor += mix(vec4(0.0), texture(greenTexture, vs_out_tex),    splatMapValues.g);
+	finalColor += mix(vec4(0.0), texture(grassTexture, vs_out_tex),	   splatMapValues.b);
+	finalColor += mix(vec4(0.0), texture(concreteTexture, vs_out_tex), splatMapValues.a);
 
 	// ************** BARNA DOMBORZAT A MEREDEK HELYEKEN ******************
 	vec3 gradient = GetGradient(vs_out_tex.x, vs_out_tex.y); // irányvektor

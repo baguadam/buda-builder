@@ -51,6 +51,7 @@ protected:
 	void SetupDebugCallback();
 	std::vector<float> GenerateHeightMap();
 	std::vector<float> m_heightMapData;
+	std::vector<glm::vec4> m_splatMapData;
 	std::vector<glm::vec4> GenerateSplatMap();
 	void InitHeightMap();
 	void InitSplatMap();
@@ -58,6 +59,9 @@ protected:
 	void CreateFrameBuffer(int width, int height);
 	// épületek renderelése
 	void RenderBuilding(glm::vec3 buildingPosition);
+	// magasságtérkép lesimítása az épületek alatt, beton elhelyezése
+	void FlattenTerrainUnderBuilding(glm::vec2 uv);
+	void PlaceConcreteUnderBuilding(glm::vec2 uv);
 
 	// FBO-hoz szükséges változók
 	bool m_frameBufferCreated{ false };	// Korábban hoztunk már létre FBO-t?
@@ -74,7 +78,8 @@ protected:
 	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
 	static constexpr glm::vec3 BUILDING_SCALE = glm::vec3(4.0f, 2.0f, 4.0f);
-	static constexpr float	   FLAT_BUILDING_RADIUS = 4.0;
+	static constexpr float	   FLAT_BUILDING_RADIUS   = 4.0;
+	static constexpr float	   FLAT_BUILDING_RADIUS_Y = 2.2;
 
 	// heightmap
 	std::vector<float> noiseData;
@@ -138,6 +143,7 @@ protected:
 	GLuint m_houseTexture = 0;
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;
+	GLuint m_concreteTexture = 0;
 
 	void InitTextures();
 	void CleanTextures();
