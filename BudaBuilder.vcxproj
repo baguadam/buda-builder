@@ -83,6 +83,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Building.cpp" />
+    <ClCompile Include="FamilyHouse.cpp" />
+    <ClCompile Include="FlatHouse.cpp" />
+    <ClCompile Include="LittleHouse.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="includes\SDL_GLDebugMessageCallback.cpp" />
     <ClCompile Include="main.cpp" />
@@ -93,7 +97,12 @@
     <ClCompile Include="PerlinNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Building.hpp" />
+    <ClInclude Include="BuildingTypes.hpp" />
+    <ClInclude Include="FamilyHouse.hpp" />
+    <ClInclude Include="FlatHouse.hpp" />
     <ClInclude Include="includes\FastNoiseLite.h" />
+    <ClInclude Include="LittleHouse.hpp" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />

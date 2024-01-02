@@ -7,6 +7,7 @@
 #include <FastNoiseLite.h>
 #include "Perlin.hpp"
 #include <iostream>
+#include "FlatHouse.hpp"
 
 CMyApp::CMyApp()
 {
@@ -82,73 +83,23 @@ void CMyApp::InitGeometry()
 	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
 	m_paramSurfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
 
-	// ************************* FLATHOUSE *******************************************
+	// ************************* ÉPÜLETEK **********************************
 	const std::initializer_list<VertexAttributeDescriptor> buildingVertexAttribList =
 	{
 		{ 0, offsetof(Vertex, position), 3, GL_FLOAT },
 		{ 1, offsetof(Vertex, normal),   3, GL_FLOAT },
 		{ 2, offsetof(Vertex, texcoord), 2, GL_FLOAT },
-	};
-
-	MeshObject<Vertex> flatMeshCPU;
-
-	flatMeshCPU.vertexArray =
-	{
-		// SZEMKÖZTI OLDAL
-		{ glm::vec3(-1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 0.0) },
-		{ glm::vec3( 1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.5, 0.0) },
-		{ glm::vec3(-1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 1.0) },
-		{ glm::vec3( 1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.5, 1.0) },
-
-		// TETŐ
-		{ glm::vec3(-1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3( 1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 0.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.5, 1.0) },
-		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 1.0) },
-
-		// JOBB OLDAL
-		{ glm::vec3(1, -1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(1, -1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3(1,  1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(1,  1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.5, 1.0) },
-
-		// HÁTLAP
-		{ glm::vec3( 1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(-1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.5, 1.0) },
-
-		// BAL OLDAL
-		{ glm::vec3(-1, -1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(-1, -1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(-1,  1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.5, 1.0) },
-	};
-
-	flatMeshCPU.indexArray =
-	{
-		// SZEMKÖZTI OLDAL
-		0, 1, 2,
-		1, 3, 2,
-
-		// TETŐ
-		16, 17, 18,
-		17, 19, 18,
-
-		// JOBB OLDAL
-		4, 5, 6,
-		5, 7, 6,
-
-		// HÁTLAP
-		8, 9,  10,
-		9, 11, 10,
-
-		// BAL OLDAL
-		12, 13, 14,
-		13, 15, 14
-	};
-
+	};	
+	// *********************************************************************
+	// ************************* FLATHOUSE *********************************
+	MeshObject<Vertex> flatMeshCPU = m_flatHouse.GetMesh();
 	m_flatHoustGPU = CreateGLObjectFromMesh(flatMeshCPU, buildingVertexAttribList);
+
+	MeshObject<Vertex> littleHouseCPU = m_littleHouse.GetMesh();
+	m_littleHouseGPU = CreateGLObjectFromMesh(littleHouseCPU, buildingVertexAttribList);
+
+	MeshObject<Vertex> familyHouseCPU = m_familyHouse.GetMesh();
+	m_familyHouseGPU = CreateGLObjectFromMesh(familyHouseCPU, buildingVertexAttribList);
 }
 
 void CMyApp::CleanGeometry()
@@ -338,8 +289,8 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 200.0, 0.0),	       // honnan nézzük a színteret	     - eye
-		glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 0.0, 5.0),	       // honnan nézzük a színteret	     - eye
+		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
 		glm::vec3(0.0, 1.0, 0.0));	       // felfelé mutató irány a világban - up
 
 	// FBO - kezdeti
@@ -474,8 +425,12 @@ void CMyApp::Render()
 	/************ BUILDING *************/
 
 	for (auto pos : m_buildingPositionVector) {
-		RenderBuilding(pos);
+		RenderFlatHouse(pos);
 	}
+
+	// RenderFlatHouse(glm::vec3(0.0, 0.0, 0.0));
+	// RenderLittleHouse(glm::vec3(0.0, 0.0, 0.0));	
+	RenderFamilyHouse(glm::vec3(0.0, 0.0, 0.0));
 
 	/***********************************/
 	/***********************************/
@@ -504,7 +459,7 @@ void CMyApp::Render()
 	glBindVertexArray( 0 );
 }
 
-void CMyApp::RenderBuilding(glm::vec3 buildingPosition) {
+void CMyApp::RenderFlatHouse(glm::vec3 buildingPosition) {
 	glBindVertexArray(m_flatHoustGPU.vaoID);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -514,13 +469,80 @@ void CMyApp::RenderBuilding(glm::vec3 buildingPosition) {
 
 	glUniform1i(ul("texImage"), 0);
 
-	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * glm::scale(BUILDING_SCALE);
+	glm::mat4 matWorld = glm::identity<glm::mat4>() * glm::scale(BUILDING_SCALE);
+	//glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * ;
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
 
 	glDrawElements(GL_TRIANGLES,
 		m_flatHoustGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
+}
+
+void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
+	RenderFlatHouse(buildingPosition); // először kirendereljük a flathouse-t
+
+	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
+	glBindVertexArray(m_littleHouseGPU.vaoID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	// megfelelőre méretezzük, majd rátoljuk a kisház tetejére
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, BUILDING_SCALE.y / 2, 0.0)) * glm::scale(BUILDING_SCALE);
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_littleHouseGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
+}
+
+void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
+	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
+	glBindVertexArray(m_familyHouseGPU.vaoID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	// megfelelőre méretezzük
+	glm::mat4 matWorld = glm::identity<glm::mat4>();
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_familyHouseGPU.count,
 		GL_UNSIGNED_INT,
 		nullptr);
 

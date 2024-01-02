@@ -22,6 +22,9 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{2647e48b-ba56-4089-91c3-4c7c3bfddc95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Buildings">
+      <UniqueIdentifier>{8f4c90f8-6453-44a2-8d3f-8987363f5178}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyApp.cpp">
@@ -48,6 +51,18 @@
     <ClCompile Include="Perlin.cpp">
       <Filter>GL Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Building.cpp">
+      <Filter>Buildings</Filter>
+    </ClCompile>
+    <ClCompile Include="FlatHouse.cpp">
+      <Filter>Buildings</Filter>
+    </ClCompile>
+    <ClCompile Include="LittleHouse.cpp">
+      <Filter>Buildings</Filter>
+    </ClCompile>
+    <ClCompile Include="FamilyHouse.cpp">
+      <Filter>Buildings</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -73,6 +88,21 @@
     </ClInclude>
     <ClInclude Include="Perlin.hpp">
       <Filter>GL Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Building.hpp">
+      <Filter>Buildings</Filter>
+    </ClInclude>
+    <ClInclude Include="FlatHouse.hpp">
+      <Filter>Buildings</Filter>
+    </ClInclude>
+    <ClInclude Include="BuildingTypes.hpp">
+      <Filter>Buildings</Filter>
+    </ClInclude>
+    <ClInclude Include="LittleHouse.hpp">
+      <Filter>Buildings</Filter>
+    </ClInclude>
+    <ClInclude Include="FamilyHouse.hpp">
+      <Filter>Buildings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

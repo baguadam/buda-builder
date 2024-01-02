@@ -16,6 +16,9 @@
 // Utils
 #include "GLUtils.hpp"
 #include "Camera.h"
+#include "FlatHouse.hpp"
+#include "LittleHouse.hpp"
+#include "FamilyHouse.hpp"
 
 struct SUpdateInfo
 {
@@ -48,6 +51,10 @@ protected:
 	int width = 800;
 	int height = 600;
 
+	FlatHouse m_flatHouse{};
+	LittleHouse m_littleHouse{};
+	FamilyHouse m_familyHouse{};
+
 	void SetupDebugCallback();
 	std::vector<float> GenerateHeightMap();
 	std::vector<float> m_heightMapData;
@@ -58,7 +65,9 @@ protected:
 	// FBO létrehozása
 	void CreateFrameBuffer(int width, int height);
 	// épületek renderelése
-	void RenderBuilding(glm::vec3 buildingPosition);
+	void RenderFlatHouse(glm::vec3 buildingPosition);
+	void RenderLittleHouse(glm::vec3 buildingPosition);
+	void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition);
 	// magasságtérkép lesimítása az épületek alatt, beton elhelyezése
 	void FlattenTerrainUnderBuilding(glm::vec2 uv);
 	void PlaceConcreteUnderBuilding(glm::vec2 uv);
@@ -127,6 +136,8 @@ protected:
 
 	OGLObject m_paramSurfaceGPU = {};
 	OGLObject m_flatHoustGPU = {};
+	OGLObject m_littleHouseGPU = {};
+	OGLObject m_familyHouseGPU = {};
 
 	// Geometria inicializálása, és törtlése
 	void InitGeometry();
