@@ -200,26 +200,41 @@ std::vector<float> CMyApp::GenerateHeightMap() {
 
 
 std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
-	FastNoiseLite noise;
-	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
+	Perlin perlinNoise{};
 	std::vector<glm::vec4> splatMapData(TABLE_RESOLUTION * TABLE_RESOLUTION);
 	int index = 0;
-	for (int y = 0; y < TABLE_RESOLUTION; y++)
-	{
-		for (int x = 0; x < TABLE_RESOLUTION; x++)
-		{
-			float noiseValue1 = noise.GetNoise((float)x, (float)y);
-			float noiseValue2 = noise.GetNoise((float)(x + 1000), (float)(y + 1000));
-			float noiseValue3 = noise.GetNoise((float)(x + 2000), (float)(y + 2000));
-			float noiseValue4 = noise.GetNoise((float)(x + 3000), (float)(y + 3000));
+	const float invResolution = 1.0f / TABLE_RESOLUTION;
+
+	for (int x = 0; x < TABLE_RESOLUTION; x++) {
+		for (int y = 0; y < TABLE_RESOLUTION; y++) {
+			// különböző frekvencia a három generált értéknek
+			float freq1 = 1;
+			float freq2 = 32;
+			float freq3 = 64;
+
+			// különböző amplitúdó a három generált értéknek
+			float amp1 = 1;
+			float amp2 = 0.5;
+			float amp3 = 0.25;
+
+			// legeneráljuk őket
+			float noiseValue1 = perlinNoise.perlin(x * freq1 * invResolution, y * freq1 * invResolution) * amp1;
+			float noiseValue2 = perlinNoise.perlin(x * freq2 * invResolution, y * freq2 * invResolution) * amp2;
+			float noiseValue3 = perlinNoise.perlin(x * freq3 * invResolution, y * freq3 * invResolution) * amp3;
+
+			// 0 és 1 közé normáljuk
+			noiseValue1 = (noiseValue1 + 1) / 2;
+			noiseValue2 = (noiseValue2 + 1) / 2;
+			noiseValue3 = (noiseValue3 + 1) / 2;
 
 			// kiszámoljuk a generált értékek összegét, majd a kapott értékell leosztunk mindent, így
 			// normálva őket megfelelően, hogy az összegük mindig 1 legyen
-			float total = noiseValue1 + noiseValue2 + noiseValue3 + noiseValue4;
-			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), (noiseValue4 / total) };
+			float total = noiseValue1 + noiseValue2 + noiseValue3;
+			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), 1 };
 		}
 	}
+
 	return splatMapData;
 }
 
@@ -260,10 +275,6 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_greenTexture, "Assets/green.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_greenTexture);
 
-	glGenTextures(1, &m_seamlessGrassTexture);
-	TextureFromFile(m_seamlessGrassTexture, "Assets/seamless_grass.jpg");
-	SetupTextureSampling(GL_TEXTURE_2D, m_seamlessGrassTexture);
-
 	glGenTextures(1, &m_brownTexture);
 	TextureFromFile(m_brownTexture, "Assets/brown.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_brownTexture);
@@ -292,7 +303,6 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_greenerGrass);
 	glDeleteTextures(1, &m_greenTexture);
 	glDeleteTextures(1, &m_grassTexture);
-	glDeleteTextures(1, &m_seamlessGrassTexture);
 	glDeleteTextures(1, &m_heightMapTexture);
 	glDeleteTextures(1, &m_splatMapTexture);
 	glDeleteTextures(1, &m_brownTexture);
@@ -404,8 +414,6 @@ void CMyApp::Render()
 	glBindTexture(GL_TEXTURE_2D, m_greenTexture);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, m_seamlessGrassTexture);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
 	glActiveTexture(GL_TEXTURE7);
@@ -420,7 +428,6 @@ void CMyApp::Render()
 	glUniform1i(ul("greenerGrass"), 2);
 	glUniform1i(ul("greenTexture"), 3);
 	glUniform1i(ul("grassTexture"), 4);
-	glUniform1i(ul("seamlessGrass"), 5);
 	glUniform1i(ul("brownTexture"), 6);
 	glUniform1i(ul("snowTexture"), 7);
 	glUniform1i(ul("sandTexture"), 8);
