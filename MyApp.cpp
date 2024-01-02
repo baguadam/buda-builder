@@ -636,6 +636,57 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 
 	if ((*m_data).z == 1) {
 		m_buildingPositionVector.push_back(glm::vec3(pos.x, height, pos.z)); // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+
+		/******************************************************/
+		/**************** KISIMÍTJUK A TALAJT *****************/
+		// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
+		int uCoord = static_cast<int>(u * TABLE_RESOLUTION);
+		int vCoord = static_cast<int>(v * TABLE_RESOLUTION);
+		int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION);
+
+		// kiolvassuk az m_heightMapData-ból az adott koordinátákohoz tartozó értéket
+		float totalHeight = 0.0f;
+		int count = 0;
+
+		// az adott sugár mentén kiolvassuk az értéket a m_heightMapData tömbből
+		for (int i = -radiusPixels; i <= radiusPixels; ++i) {
+			for (int j = -radiusPixels; j <= radiusPixels; ++j) {
+				int x = uCoord + i;
+				int y = vCoord + j;
+
+				if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+					totalHeight += m_heightMapData[y * TABLE_RESOLUTION + x];
+					count++;
+				}
+			}
+		}
+
+		std::cout << "TOTAL: " << totalHeight << '\n';
+		std::cout << "COUNT: " << count << '\n';
+
+		// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, módosítjuk a megfelelő magasságértékeket
+		// az átlagra
+		if (count > 0) {
+			float averageHeight = totalHeight / static_cast<float>(count);
+			std::cout << "AVERAGE: " << averageHeight << '\n';
+
+			// Update the heightmap values for the determined area
+			for (int i = -radiusPixels; i <= radiusPixels; ++i) {
+				for (int j = -radiusPixels; j <= radiusPixels; ++j) {
+					int x = uCoord + i;
+					int y = vCoord + j;
+
+					if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+						m_heightMapData[y * TABLE_RESOLUTION + x] = averageHeight;
+					}
+				}
+			}
+
+			// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
+			glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TABLE_RESOLUTION, TABLE_RESOLUTION, GL_RED, GL_FLOAT, m_heightMapData.data());
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 	}
 }
 

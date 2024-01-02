@@ -74,6 +74,7 @@ protected:
 	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
 	static constexpr glm::vec3 BUILDING_SCALE = glm::vec3(4.0f, 2.0f, 4.0f);
+	static constexpr float	   FLAT_BUILDING_RADIUS = 4.0;
 
 	// heightmap
 	std::vector<float> noiseData;
