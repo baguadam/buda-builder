@@ -89,6 +89,7 @@
     <ClCompile Include="includes\GLUtils.cpp" />
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
+    <ClCompile Include="Perlin.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +100,7 @@
     <ClInclude Include="includes\Camera.h" />
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
+    <ClInclude Include="Perlin.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Frag_Building.frag" />

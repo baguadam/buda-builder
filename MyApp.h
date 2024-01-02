@@ -44,6 +44,10 @@ public:
 	void MouseWheel(const SDL_MouseWheelEvent&);
 	void Resize(int, int);
 protected:
+	// ablak mérete
+	int width = 800;
+	int height = 600;
+
 	void SetupDebugCallback();
 	std::vector<float> GenerateHeightMap();
 	std::vector<float> m_heightMapData;
@@ -64,11 +68,9 @@ protected:
 
 	std::vector<glm::vec3> m_buildingPositionVector{}; // ebben tároljuk az újonnan létrehozott épületek koordinátáit koordinátáit
 
-	//
-	// Adat változók
-	//
 	// A parametrikus felülettel kapcsolatos változók
-	static constexpr int       TABLE_RESOLUTION = 512;
+	static constexpr int       TABLE_RESOLUTION = 256;
+	static constexpr int	   SCALE_VALUE = 200;
 	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
 	static constexpr glm::vec3 BUILDING_SCALE = glm::vec3(4.0f, 2.0f, 4.0f);

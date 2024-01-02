@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 #include <FastNoiseLite.h>
+#include "Perlin.hpp"
 #include <iostream>
 
 CMyApp::CMyApp()
@@ -157,22 +158,46 @@ void CMyApp::CleanGeometry()
 }
 
 std::vector<float> CMyApp::GenerateHeightMap() {
-	FastNoiseLite noise;
-	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-
+	Perlin perlinNoise{};
 	std::vector<float> noiseData(TABLE_RESOLUTION * TABLE_RESOLUTION);
+
 	int index = 0;
-	for (int y = 0; y < TABLE_RESOLUTION; y++)
-	{
-		for (int x = 0; x < TABLE_RESOLUTION; x++)
-		{
-			float noiseValue = noise.GetNoise((float)x, (float)y);
-			noiseData[index++] = (noiseValue + 1) / 2; // hogy a generált értékek 0 és 1 között legyenek
+	const float invResolution = 1.0f / TABLE_RESOLUTION; // hogy ne kelljen minden iterációban osztani a felbontással
+	// 0 és 1 közé normalizálás érdekében eltároljuk a maximum és a minimum értékeket
+	float minValue = std::numeric_limits<float>::max();
+	float maxValue = std::numeric_limits<float>::lowest();
+
+	for (int x = 0; x < TABLE_RESOLUTION; x++) {
+		for (int y = 0; y < TABLE_RESOLUTION; y++) {
+			float val = 0; // kezdeti érték
+			float freq = 1; // frekvencia
+			float amp = 1; // amplitúdó
+
+			// mintavételezünk tízszer, majd ezeket mossuk össze, a frekvenciát mindig növeljük, az amplitúdot csökkentjük
+			for (int i = 0; i < 10; i++) {
+				val += perlinNoise.perlin(x * freq * invResolution, y * freq * invResolution) * amp;
+
+				freq *= 2;
+				amp /= 2;
+			}
+
+			val = (val + 1) / 2;
+
+			minValue = std::min(minValue, val);
+			maxValue = std::max(maxValue, val);
+
+			noiseData[index++] = val;
 		}
+	}
+
+	// a legenerált noise értékeket 0 és 1 közé széroszlatjuk
+	for (float& value : noiseData) {
+		value = (value - minValue) / (maxValue - minValue);
 	}
 
 	return noiseData;
 }
+
 
 std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
 	FastNoiseLite noise;
@@ -589,7 +614,7 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 
 	// kiolvassuk a framebufferből az adott pixelhez tartozó UV értékeket
 	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
-	glReadPixels(x, 600 - y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
+	glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
 	float u = (*m_data).x;
 	float v = (*m_data).y;
 	glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
@@ -599,7 +624,7 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	GLubyte* texData = new GLubyte[TABLE_RESOLUTION * TABLE_RESOLUTION];
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, texData);
 	int index = (int)(v * TABLE_RESOLUTION) * TABLE_RESOLUTION + (int)(u * TABLE_RESOLUTION);
-	float height = texData[index] / 255.0f * 100; // eltároljuk az oda tartozó magasságot
+	float height = texData[index] / 255.0f * SCALE_VALUE; // eltároljuk az oda tartozó magasságot, a kilvasott értéket megszorozzuk a max. magassággal
 	delete[] texData;
 
 	if ((*m_data).z == 1) {
@@ -622,6 +647,8 @@ void CMyApp::MouseWheel(const SDL_MouseWheelEvent& wheel)
 // a két paraméterben az új ablakméret szélessége (_w) és magassága (_h) található
 void CMyApp::Resize(int _w, int _h)
 {
+	width = _w;
+	height = _h;
 	glViewport(0, 0, _w, _h);
 	m_camera.Resize( _w, _h );
 	CreateFrameBuffer(_w, _h);
