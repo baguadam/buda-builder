@@ -109,7 +109,8 @@ protected:
 	// A parametrikus felülettel kapcsolatos változók
 	static constexpr float       TABLE_RESOLUTION = 512.0f;
 	static constexpr int	     SCALE_VALUE = 200;
-	static constexpr glm::vec3   TABLE_SCALE = glm::vec3(600.0f, 1.0f, 600.0f);
+	static constexpr glm::vec3   TABLE_SCALE = glm::vec3(600.0f,  1.0f, 600.0f);
+	static constexpr glm::vec3   WATER_SCALE = glm::vec3(2400.0f, 1.0f, 2400.0f);
 
 	// heightmap
 	std::vector<float> noiseData;
@@ -131,6 +132,7 @@ protected:
 	GLuint m_buildingID = 0;
 	GLuint m_programSkyboxID = 0; // skybox programja
 	GLuint m_FBOID = 0;
+	GLuint m_programWater = 0;
 
 	// Fényforrás- ...
 	glm::vec4 m_lightPos       = glm::vec4(0.0f, 0.0f,  1.0f, 0.0f);
@@ -140,7 +142,7 @@ protected:
 	glm::vec3 m_Ld = glm::vec3(1.0, 1.0, 1.0 );
 	glm::vec3 m_Ls = glm::vec3(1.0, 1.0, 1.0 );
 
-	float m_lightConstantAttenuation    = 1.0;
+	float m_lightConstantAttenuation    = 1.7;
 	float m_lightLinearAttenuation      = 0.0;
 	float m_lightQuadraticAttenuation   = 0.0;
 
@@ -157,10 +159,12 @@ protected:
 	void CleanSkyboxShaders();
 	void CleanShaders();
 
-	// Geometriával kapcsolatos változók
+	void RenderWater();
 
+	// Geometriával kapcsolatos változók
 	OGLObject m_paramSurfaceGPU = {};
 	OGLObject m_SkyboxGPU = {};
+	OGLObject m_WaterGPU = {};
 	OGLObject m_flatHoustGPU = {};
 	OGLObject m_littleHouseGPU = {};
 	OGLObject m_familyHouseGPU = {};
@@ -183,6 +187,7 @@ protected:
 	GLuint m_heightMapTexture = 0;
 	GLuint m_splatMapTexture = 0;
 	GLuint m_concreteTexture = 0;
+	GLuint m_waterTexture = 0;
 
 	void InitTextures();
 	void CleanTextures();

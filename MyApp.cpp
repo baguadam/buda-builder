@@ -43,6 +43,8 @@ void CMyApp::InitShaders()
 	m_FBOID = glCreateProgram();
 	AssembleProgram(m_FBOID, "Vert_PosNormTex.vert", "Frag_FBO.frag");
 
+	m_programWater = glCreateProgram();
+	AssembleProgram(m_programWater, "Vert_water.vert", "Frag_Building.frag"); // a fragmens shader ugyanaz marad
 	InitSkyboxShaders();
 }
 
@@ -62,6 +64,7 @@ void CMyApp::CleanShaders()
 	glDeleteProgram(m_programID);
 	glDeleteProgram(m_buildingID);
 	glDeleteProgram(m_FBOID);
+	glDeleteProgram(m_programWater);
 
 	CleanSkyboxShaders();
 }
@@ -137,15 +140,18 @@ void CMyApp::CleanSkyboxGeometry()
 
 void CMyApp::InitGeometry()
 {
-	// Skybox
+	// ************************* SKYBOX ************************************
 	InitSkyboxGeometry();
 
-	// hegihtmap inicializálása
+	// ************************* VÍZ ***************************************
 	const std::initializer_list<VertexAttributeDescriptor> vertexAttribList =
 	{
 		{ 0, offsetof( Vertex, texcoord ), 2, GL_FLOAT },
 	};
+	MeshObject<Vertex> waterCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
+	m_WaterGPU = CreateGLObjectFromMesh(waterCPU, vertexAttribList);
 
+	// ************************* HEIGHTMAP *********************************
 	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
 	m_paramSurfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
 
@@ -174,6 +180,7 @@ void CMyApp::CleanGeometry()
 	CleanOGLObject(m_flatHoustGPU);
 	CleanOGLObject(m_littleHouseGPU);
 	CleanOGLObject(m_familyHouseGPU);
+	CleanOGLObject(m_WaterGPU);
 
 	CleanSkyboxGeometry();
 }
@@ -316,6 +323,10 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_concreteTexture, "Assets/concrete.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_concreteTexture);
 
+	glGenTextures(1, &m_waterTexture);
+	TextureFromFile(m_waterTexture, "Assets/water_texture.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_waterTexture);
+
 	// heightmap
 	InitHeightMap();
 
@@ -335,6 +346,7 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_sandTexture);
 	glDeleteTextures(1, &m_houseTexture);
 	glDeleteTextures(1, &m_concreteTexture);
+	glDeleteTextures(1, &m_waterTexture);
 }
 
 bool CMyApp::Init()
@@ -511,6 +523,11 @@ void CMyApp::Render()
 
 	/************************************/
 	/************************************/
+	/************ WATER *****************/
+	RenderWater();
+
+	/************************************/
+	/************************************/
 	/************ BUILDINGS *************/
 	for (auto pos : m_buildingTypePositionVector) {
 		switch (pos.type) {
@@ -580,6 +597,55 @@ void CMyApp::Render()
 
 	// VAO kikapcsolása
 	glBindVertexArray( 0 );
+}
+
+void CMyApp::RenderWater() {
+	// *************VÍZ*******************
+	glBindVertexArray(m_WaterGPU.vaoID);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_waterTexture);
+
+	glUseProgram(m_programWater); // megmondjuk, hogy a vízhez tartozó shadereket használja, amit direkt
+
+	glm::mat4 matWorld = glm::translate(glm::vec3(-800.0, 10.0, 500.0)) * glm::scale(WATER_SCALE);
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	// - Fényforrások beállítása
+	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
+	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
+	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
+
+	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
+	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
+	glUniform3fv(ul("Ls"), 1, glm::value_ptr(m_Ls));
+
+	glUniform1f(ul("lightConstantAttenuation"), m_lightConstantAttenuation);
+	glUniform1f(ul("lightLinearAttenuation"), m_lightLinearAttenuation);
+	glUniform1f(ul("lightQuadraticAttenuation"), m_lightQuadraticAttenuation);
+
+	// - Anyagjellemzők beállítása
+	glUniform3fv(ul("Ka"), 1, glm::value_ptr(m_Ka));
+	glUniform3fv(ul("Kd"), 1, glm::value_ptr(m_Kd));
+	glUniform3fv(ul("Ks"), 1, glm::value_ptr(m_Ks));
+
+	glUniform1f(ul("Shininess"), m_Shininess);
+
+	// leküldjük az eltelt időt, floatot küldök le, megadom a shaderben, hogy minek, majd, hogy mit
+	glUniform1f(ul("elapsedTimeSec"), m_ElapsedTimeInSec);
+
+	// - textúraegységek beállítása
+	glUniform1i(ul("texImage"), 0);
+
+	glDrawElements(GL_TRIANGLES,
+		m_WaterGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
 }
 
 void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType type) {

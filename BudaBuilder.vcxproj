@@ -121,6 +121,7 @@
     <None Include="Vert_PosNormTex.vert" />
     <None Include="Frag_Lighting.frag" />
     <None Include="Vert_skybox.vert" />
+    <None Include="Vert_water.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\board.png" />
@@ -133,6 +134,7 @@
     <Image Include="Assets\sand.jpg" />
     <Image Include="Assets\seamless_grass.jpg" />
     <Image Include="Assets\snow.jpg" />
+    <Image Include="Assets\water_texture.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
