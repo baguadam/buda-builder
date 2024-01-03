@@ -483,10 +483,10 @@ void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType ty
 
 	glm::mat4 matWorld;
 	if (type == FLAT_HOUSE) {
-		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+		matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
 	}
 	else {
-		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetBlockRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetBlockScale());
+		matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_flatHouse.GetBlockRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetBlockScale());
 	}
 
 	//glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * ;
@@ -543,7 +543,7 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük, majd rátoljuk a kisház tetejére
-	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY() * 2, 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY() * 2, 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -595,7 +595,7 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük
-	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -833,6 +833,42 @@ void CMyApp::RenderGUI()
 	ImGui::End();
 }
 
+glm::vec3 CMyApp::GetBuildingDimensions(BuildingType type) {
+	switch (type) {
+	case FLAT_HOUSE:
+		return glm::vec3(m_flatHouse.GetFlatRadiusX(), m_flatHouse.GetFlatRadiusY(), m_flatHouse.GetFlatRadiusZ());
+	case BLOCK_HOUSE:
+		return glm::vec3(m_flatHouse.GetBlockRadiusX(), m_flatHouse.GetBlockRadiusY(), m_flatHouse.GetBlockRadiusZ());
+	case LITTLE_HOUSE:
+		return glm::vec3(m_littleHouse.GetRadiusX(), m_flatHouse.GetFlatRadiusY() + m_littleHouse.GetRadiusY() * 2, m_littleHouse.GetRadiusZ());
+	case FAMILY_HOUSE:
+		return glm::vec3(m_familyHouse.GetRadiusX(), m_familyHouse.GetRadiusY(), m_familyHouse.GetRadiusZ());
+	}
+}
+
+bool CMyApp::CheckBuildingCollisions(glm::vec3 newPosition, BuildingType type) {
+	// meghatározzuk az újonnan létrehozandó épület AABB-át
+	glm::vec3 newBuildingMin = newPosition - GetBuildingDimensions(type);
+	glm::vec3 newBuildingMax = newPosition + GetBuildingDimensions(type);
+
+	// végigiterálunk a már eltárolt épületek listáján és megnézzük, hogy van-e bármelyikkel ütközés
+	for (const auto& building : m_buildingTypePositionVector) {
+		// meghatározzuk a már létező épület esetén is az AABB-t
+		glm::vec3 existingBuildingMin = building.buildingPosition - GetBuildingDimensions(building.type);
+		glm::vec3 existingBuildingMax = building.buildingPosition + GetBuildingDimensions(building.type);
+
+		// AABB algoritmus, megnézzük, hogy van-e ütközés, ha igen, visszatérünk true-val
+		if (newBuildingMax.x > existingBuildingMin.x && newBuildingMin.x < existingBuildingMax.x &&
+			newBuildingMax.y > existingBuildingMin.y && newBuildingMin.y < existingBuildingMax.y &&
+			newBuildingMax.z > existingBuildingMin.z && newBuildingMin.z < existingBuildingMax.z) {
+			return true;
+		}
+	}
+
+	// az egész végén, amennyiben nem volt ütközés, akkor visszatérünk false-szal
+	return false;
+}
+
 GLint CMyApp::ul( const char* uniformName ) noexcept
 {
 	GLuint programID = 0;
@@ -896,16 +932,20 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 		float v = (*m_data).y;
 		glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
 
-		FlattenTerrainUnderBuilding(glm::vec2(u, v), selectedBuilding); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
-		PlaceConcreteUnderBuilding(glm::vec2(u, v), selectedBuilding);  // betont helyezünk le az épület alá
-
-		// miután módosítottuk a magasságértéket, kiolvassuk a már módosítottat, hogy jó magasságra helyezzük le az épületeket
+		// meghatározzuk a jelenlegi magasság értéket, hogy ennek segítségével detektáljuk az ütközést, ha van
 		int uCoord = static_cast<int>(u * TABLE_RESOLUTION);
 		int vCoord = static_cast<int>(v * TABLE_RESOLUTION);
 		float height = m_heightMapData[vCoord * TABLE_RESOLUTION + uCoord] * SCALE_VALUE;
-		
-		StoredBuilding current{ glm::vec3(pos.x, height, pos.z), selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
-		m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+
+		if (!CheckBuildingCollisions(glm::vec3(pos.x, height, pos.z) * TABLE_SCALE, selectedBuilding)) {
+			FlattenTerrainUnderBuilding(glm::vec2(u, v), selectedBuilding); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
+			PlaceConcreteUnderBuilding(glm::vec2(u, v), selectedBuilding);  // betont helyezünk le az épület alá
+			// miután módosítottuk a magasságértéket, kiolvassuk a már módosítottat, hogy jó magasságra helyezzük le az épületeket
+			height = m_heightMapData[vCoord * TABLE_RESOLUTION + uCoord] * SCALE_VALUE;
+
+			StoredBuilding current{ glm::vec3(pos.x, height, pos.z) * TABLE_SCALE, selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
+			m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+		}
 	}
 }
 
