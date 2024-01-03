@@ -1,32 +1,27 @@
 #version 430
 
-// VBO-b√≥l √©rkez≈ë v√°ltoz√≥k
+// VBO-bÛl Èrkezı v·ltozÛk
 layout( location = 0 ) in vec2 vs_in_tex;
 
-// a pipeline-ban tov√°bb adand√≥ √©rt√©kek
 out vec3 vs_out_pos;
 out vec3 vs_out_norm;
 out vec2 vs_out_tex;
 
-// shader k√ºls≈ë param√©terei - most a h√°rom transzform√°ci√≥s m√°trixot k√ºl√∂n-k√ºl√∂n vessz√ºk √°t
 uniform mat4 world;
 uniform mat4 worldIT;
 uniform mat4 viewProj;
 
-uniform sampler2D heightMapTexture;
+uniform float elapsedTimeSec = 0.0; // lek¸ldj¸k az eltelt idıt a hull·mz·shoz
 
-vec3 GetPos(float u, float v)
+vec3 GetPos(float u, float v) 
 {
-	float scaleValue = 200;
-	float height = texture(heightMapTexture, vs_in_tex).r * scaleValue;
-	return vec3(u, height, -v);
+	return vec3(u, (sin(v * 11 + elapsedTimeSec * 3) * cos(elapsedTimeSec)) * 10 + 35, -v); // h˙szszoroz·ra vessz¸k a mÈretÈt, majd elotljuk kˆzÈpre
 }
 
-vec3 GetNorm(float u, float v)
+vec3 GetNorm(float u, float v) 
 {
 	vec3 du = GetPos(u + 0.01, v) - GetPos(u - 0.01, v);
 	vec3 dv = GetPos(u, v + 0.01) - GetPos(u, v - 0.01);
-
 	return normalize(cross(du, dv));
 }
 
@@ -34,7 +29,7 @@ void main()
 {
 	vec3 pos = GetPos(vs_in_tex.x, vs_in_tex.y);
 
-	gl_Position = viewProj * world * vec4( pos, 1 );
+	gl_Position = viewProj * world * vec4(pos, 1);
 	vs_out_pos  = (world   * vec4(pos,  1)).xyz;
 	vs_out_norm = (worldIT * vec4(GetNorm(vs_in_tex.x, vs_in_tex.y), 0)).xyz;
 
