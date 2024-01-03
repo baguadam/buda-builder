@@ -509,6 +509,8 @@ void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType ty
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -563,6 +565,8 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -615,6 +619,8 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));

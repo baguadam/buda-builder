@@ -16,6 +16,10 @@ uniform vec3 cameraPos;
 // fenyforras tulajdonsagok
 uniform vec4 lightPosFirst = vec4(0.0, 1.0, 0.0, 0.0);
 uniform vec4 lightPosSecond = vec4(0.0, 1.0, 0.0, 0.0);
+uniform vec4 sunMoonDirection = vec4( 0.0, 1.0, 0.0, 0.0);
+
+// nap/hold fényének aktuális színe
+uniform vec3 sunMoonLightColor = vec3(1.0, 0.0, 0.0);
 
 uniform vec3 La = vec3(0.0, 0.0, 0.0 );
 uniform vec3 Ld = vec3(1.0, 1.0, 1.0 );
@@ -39,21 +43,16 @@ void main()
 
 	//***************************************************
 	//***************************************************
-	//*************** MÁSODLAGOS FÉNY *******************
-	vec3 ToLightSecond = lightPosSecond.xyz;
-	ToLightSecond = normalize(ToLightSecond);
-	float AttenuationSecond = 1.0 / lightConstantAttenuation;
-
-	float DiffuseFactorSecond = max(dot(ToLightSecond, normal), 0.0) * AttenuationSecond;
-	vec3 DiffuseSecond = DiffuseFactorSecond * Ld * Kd;
+	//*************** NAP/HOLD FÉNYE ********************
+	vec3  SunMoonDir = normalize(sunMoonDirection.xyz); // mivel irányfényforrás
+	float SunMoonDiffuseFactor = max(dot(SunMoonDir, normal), 0.0);
+	vec3  SunMoonDiffuse = SunMoonDiffuseFactor * sunMoonLightColor;
 
 	// Spekuláris komponens
-	vec3 viewDirSecond = normalize( cameraPos - vs_out_pos ); // A fragmentbõl a kamerába mutató vektor
-	vec3 reflectDirSecond = reflect( -ToLightSecond, normal ); // Tökéletes visszaverõdés vektora
-
-	// A spekuláris komponens
-	float SpecularFactorSecond = pow(max(dot( viewDirSecond, reflectDirSecond) ,0.0), Shininess) * AttenuationSecond;
-	vec3 SpecularSecond = SpecularFactorSecond*Ls*Ks;
+	vec3  viewDir = normalize( cameraPos - vs_out_pos ); // A fragmentbõl a kamerába mutató vektor
+	vec3  reflectDirSunMoon = reflect( -SunMoonDir, normal ); // Tökéletes visszaverõdés vektora
+	float SpecularFactorSunMoon = pow(max(dot( viewDir, reflectDirSunMoon) ,0.0), Shininess);
+	vec3  SpecularSunMoon = SpecularFactorSunMoon*Ls*Ks;
 
 	//***************************************************
 	//***************************************************
@@ -81,12 +80,11 @@ void main()
 	vec3 Diffuse = DiffuseFactor * Ld * Kd;
 	
 	// Spekuláris komponens
-	vec3 viewDir = normalize( cameraPos - vs_out_pos ); // A fragmentbõl a kamerába mutató vektor
 	vec3 reflectDir = reflect( -ToLight, normal ); // Tökéletes visszaverõdés vektora
 	
 	// A spekuláris komponens
 	float SpecularFactor = pow(max(dot( viewDir, reflectDir) ,0.0), Shininess) * Attenuation;
 	vec3 Specular = SpecularFactor*Ls*Ks;
 
-	fs_out_col = vec4(Ambient + Diffuse + DiffuseSecond + Specular + SpecularSecond, 1.0) * texture(texImage, vs_out_tex);
+	fs_out_col = vec4(Ambient + Diffuse + SunMoonDiffuse + Specular + SpecularSunMoon, 1.0) * texture(texImage, vs_out_tex);
 }
