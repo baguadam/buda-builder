@@ -5,14 +5,18 @@
 
 #include <imgui.h>
 #include <FastNoiseLite.h>
+#include "Perlin.hpp"
 #include <iostream>
+#include "FlatHouse.hpp"
 
 CMyApp::CMyApp()
 {
+	m_data = new glm::vec3(0.0);
 }
 
 CMyApp::~CMyApp()
 {
+	delete[] m_data;
 }
 
 void CMyApp::SetupDebugCallback()
@@ -35,12 +39,16 @@ void CMyApp::InitShaders()
 
 	m_buildingID = glCreateProgram();
 	AssembleProgram(m_buildingID, "Vert_Building.vert", "Frag_Building.frag");
+
+	m_FBOID = glCreateProgram();
+	AssembleProgram(m_FBOID, "Vert_PosNormTex.vert", "Frag_FBO.frag");
 }
 
 void CMyApp::CleanShaders()
 {
 	glDeleteProgram(m_programID);
 	glDeleteProgram(m_buildingID);
+	glDeleteProgram(m_FBOID);
 }
 
 // Nyers parameterek
@@ -48,7 +56,7 @@ struct ParamPlane
 {
 	glm::vec3 GetPos(float u, float v) const noexcept
 	{
-		return glm::vec3(u, v, 0.0);
+		return glm::vec3(u, 0, -v);
 	}
 
 	glm::vec3 GetNorm(float u, float v) const noexcept
@@ -62,7 +70,6 @@ struct ParamPlane
 	}
 };
 
-
 void CMyApp::InitGeometry()
 {
 	// hegihtmap inicializálása
@@ -75,141 +82,132 @@ void CMyApp::InitGeometry()
 	MeshObject<Vertex> surfaceMeshCPU = GetParamSurfMesh(ParamPlane(), TABLE_RESOLUTION, TABLE_RESOLUTION);
 	m_paramSurfaceGPU = CreateGLObjectFromMesh( surfaceMeshCPU, vertexAttribList );
 
-	// ************************* FLATHOUSE *******************************************
+	// ************************* ÉPÜLETEK **********************************
 	const std::initializer_list<VertexAttributeDescriptor> buildingVertexAttribList =
 	{
 		{ 0, offsetof(Vertex, position), 3, GL_FLOAT },
 		{ 1, offsetof(Vertex, normal),   3, GL_FLOAT },
 		{ 2, offsetof(Vertex, texcoord), 2, GL_FLOAT },
-	};
-
-	MeshObject<Vertex> flatMeshCPU;
-
-	flatMeshCPU.vertexArray =
-	{
-		// SZEMKÖZTI OLDAL
-		{ glm::vec3(-1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 0.0) },
-		{ glm::vec3( 1, -1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.5, 0.0) },
-		{ glm::vec3(-1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.0, 1.0) },
-		{ glm::vec3( 1,  1, 0),  glm::vec3(0.0, 0.0, 1.0),  glm::vec2(0.5, 1.0) },
-
-		// TETŐ
-		{ glm::vec3(-1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3( 1,  1,   0),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 0.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(0.5, 1.0) },
-		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 1.0, 0.0), glm::vec2(1.0, 1.0) },
-
-		// JOBB OLDAL
-		{ glm::vec3(1, -1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(1, -1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3(1,  1,   0),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(1,  1,  -2),   glm::vec3(1.0, 0.0, 0.0), glm::vec2(0.5, 1.0) },
-
-		// HÁTLAP
-		{ glm::vec3( 1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(-1, -1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3( 1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(0.0, 0.0, -1.0), glm::vec2(0.5, 1.0) },
-
-		// BAL OLDAL
-		{ glm::vec3(-1, -1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 0.0) },
-		{ glm::vec3(-1, -1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.5, 0.0) },
-		{ glm::vec3(-1,  1,  -2),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.0, 1.0) },
-		{ glm::vec3(-1,  1,   0),   glm::vec3(-1.0, 0.0, 0.0), glm::vec2(0.5, 1.0) },
-	};
-
-	flatMeshCPU.indexArray =
-	{
-		// SZEMKÖZTI OLDAL
-		0, 1, 2,
-		1, 3, 2,
-
-		// TETŐ
-		16, 17, 18,
-		17, 19, 18,
-
-		// JOBB OLDAL
-		4, 5, 6,
-		5, 7, 6,
-
-		// HÁTLAP
-		8, 9,  10,
-		9, 11, 10,
-
-		// BAL OLDAL
-		12, 13, 14,
-		13, 15, 14
-	};
-
+	};	
+	// *********************************************************************
+	// ************************* FLATHOUSE *********************************
+	MeshObject<Vertex> flatMeshCPU = m_flatHouse.GetMesh();
 	m_flatHoustGPU = CreateGLObjectFromMesh(flatMeshCPU, buildingVertexAttribList);
+
+	MeshObject<Vertex> littleHouseCPU = m_littleHouse.GetMesh();
+	m_littleHouseGPU = CreateGLObjectFromMesh(littleHouseCPU, buildingVertexAttribList);
+
+	MeshObject<Vertex> familyHouseCPU = m_familyHouse.GetMesh();
+	m_familyHouseGPU = CreateGLObjectFromMesh(familyHouseCPU, buildingVertexAttribList);
 }
 
 void CMyApp::CleanGeometry()
 {
 	CleanOGLObject(m_paramSurfaceGPU);
 	CleanOGLObject(m_flatHoustGPU);
+	CleanOGLObject(m_littleHouseGPU);
+	CleanOGLObject(m_familyHouseGPU);
 }
 
 std::vector<float> CMyApp::GenerateHeightMap() {
-	FastNoiseLite noise;
-	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-
+	Perlin perlinNoise{};
 	std::vector<float> noiseData(TABLE_RESOLUTION * TABLE_RESOLUTION);
+
 	int index = 0;
-	for (int y = 0; y < TABLE_RESOLUTION; y++)
-	{
-		for (int x = 0; x < TABLE_RESOLUTION; x++)
-		{
-			float noiseValue = noise.GetNoise((float)x, (float)y);
-			noiseData[index++] = (noiseValue + 1) / 2; // hogy a generált értékek 0 és 1 között legyenek
+	const float invResolution = 1.0f / TABLE_RESOLUTION; // hogy ne kelljen minden iterációban osztani a felbontással
+	// 0 és 1 közé normalizálás érdekében eltároljuk a maximum és a minimum értékeket
+	float minValue = std::numeric_limits<float>::max();
+	float maxValue = std::numeric_limits<float>::lowest();
+
+	for (int x = 0; x < TABLE_RESOLUTION; x++) {
+		for (int y = 0; y < TABLE_RESOLUTION; y++) {
+			float val = 0; // kezdeti érték
+			float freq = 1; // frekvencia
+			float amp = 1; // amplitúdó
+
+			// mintavételezünk tízszer, majd ezeket mossuk össze, a frekvenciát mindig növeljük, az amplitúdot csökkentjük
+			for (int i = 0; i < 10; i++) {
+				val += perlinNoise.perlin(x * freq * invResolution, y * freq * invResolution) * amp;
+
+				freq *= 2;
+				amp /= 2;
+			}
+
+			val = (val + 1) / 2;
+
+			minValue = std::min(minValue, val);
+			maxValue = std::max(maxValue, val);
+
+			noiseData[index++] = val;
 		}
+	}
+
+	// a legenerált noise értékeket 0 és 1 közé széroszlatjuk
+	for (float& value : noiseData) {
+		value = (value - minValue) / (maxValue - minValue);
 	}
 
 	return noiseData;
 }
 
-std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
-	FastNoiseLite noise;
-	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
+std::vector<glm::vec4> CMyApp::GenerateSplatMap() {
+
+	Perlin perlinNoise{};
 	std::vector<glm::vec4> splatMapData(TABLE_RESOLUTION * TABLE_RESOLUTION);
 	int index = 0;
-	for (int y = 0; y < TABLE_RESOLUTION; y++)
-	{
-		for (int x = 0; x < TABLE_RESOLUTION; x++)
-		{
-			float noiseValue1 = noise.GetNoise((float)x, (float)y);
-			float noiseValue2 = noise.GetNoise((float)(x + 1000), (float)(y + 1000));
-			float noiseValue3 = noise.GetNoise((float)(x + 2000), (float)(y + 2000));
-			float noiseValue4 = noise.GetNoise((float)(x + 3000), (float)(y + 3000));
+	const float invResolution = 1.0f / TABLE_RESOLUTION;
+
+	for (int x = 0; x < TABLE_RESOLUTION; x++) {
+		for (int y = 0; y < TABLE_RESOLUTION; y++) {
+			// különböző frekvencia a három generált értéknek
+			float freq1 = 1;
+			float freq2 = 32;
+			float freq3 = 64;
+
+			// különböző amplitúdó a három generált értéknek
+			float amp1 = 1;
+			float amp2 = 0.5;
+			float amp3 = 0.25;
+
+			// legeneráljuk őket
+			float noiseValue1 = perlinNoise.perlin(x * freq1 * invResolution, y * freq1 * invResolution) * amp1;
+			float noiseValue2 = perlinNoise.perlin(x * freq2 * invResolution, y * freq2 * invResolution) * amp2;
+			float noiseValue3 = perlinNoise.perlin(x * freq3 * invResolution, y * freq3 * invResolution) * amp3;
+
+			// 0 és 1 közé normáljuk
+			noiseValue1 = (noiseValue1 + 1) / 2;
+			noiseValue2 = (noiseValue2 + 1) / 2;
+			noiseValue3 = (noiseValue3 + 1) / 2;
 
 			// kiszámoljuk a generált értékek összegét, majd a kapott értékell leosztunk mindent, így
 			// normálva őket megfelelően, hogy az összegük mindig 1 legyen
-			float total = noiseValue1 + noiseValue2 + noiseValue3 + noiseValue4;
-			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), (noiseValue4 / total) };
+			float total = noiseValue1 + noiseValue2 + noiseValue3;
+			splatMapData[index++] = { (noiseValue1 / total), (noiseValue2 / total), (noiseValue3 / total), 0 };
 		}
 	}
+
 	return splatMapData;
 }
 
 void CMyApp::InitHeightMap() {
-	std::vector<float> noiseData = GenerateHeightMap(); // a legenerált a heightmap
+	m_heightMapData = GenerateHeightMap(); // a legenerált a heightmap
 
 	// Egycsatornás textúre létrehozása a heightmap-hez
 	glGenTextures(1, &m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, noiseData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, m_heightMapData.data());
 	SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void CMyApp::InitSplatMap() {
-	std::vector<glm::vec4> splatMapData = GenerateSplatMap(); // a legenerált a splatmap
+	m_splatMapData = GenerateSplatMap(); // a legenerált a splatmap
 
 	// Négycsatornsá textúre létrehozása a splatmap-hez
 	glGenTextures(1, &m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, splatMapData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RGBA, GL_FLOAT, m_splatMapData.data());
 	SetupTextureSampling(GL_TEXTURE_2D, m_splatMapTexture);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -229,10 +227,6 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_greenTexture, "Assets/green.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_greenTexture);
 
-	glGenTextures(1, &m_seamlessGrassTexture);
-	TextureFromFile(m_seamlessGrassTexture, "Assets/seamless_grass.jpg");
-	SetupTextureSampling(GL_TEXTURE_2D, m_seamlessGrassTexture);
-
 	glGenTextures(1, &m_brownTexture);
 	TextureFromFile(m_brownTexture, "Assets/brown.jpg");
 	SetupTextureSampling(GL_TEXTURE_2D, m_brownTexture);
@@ -249,6 +243,10 @@ void CMyApp::InitTextures()
 	TextureFromFile(m_houseTexture, "Assets/House1_Diffuse.png");
 	SetupTextureSampling(GL_TEXTURE_2D, m_houseTexture);
 
+	glGenTextures(1, &m_concreteTexture);
+	TextureFromFile(m_concreteTexture, "Assets/concrete.jpg");
+	SetupTextureSampling(GL_TEXTURE_2D, m_concreteTexture);
+
 	// heightmap
 	InitHeightMap();
 
@@ -261,13 +259,13 @@ void CMyApp::CleanTextures()
 	glDeleteTextures(1, &m_greenerGrass);
 	glDeleteTextures(1, &m_greenTexture);
 	glDeleteTextures(1, &m_grassTexture);
-	glDeleteTextures(1, &m_seamlessGrassTexture);
 	glDeleteTextures(1, &m_heightMapTexture);
 	glDeleteTextures(1, &m_splatMapTexture);
 	glDeleteTextures(1, &m_brownTexture);
 	glDeleteTextures(1, &m_snowTexture);
 	glDeleteTextures(1, &m_sandTexture);
 	glDeleteTextures(1, &m_houseTexture);
+	glDeleteTextures(1, &m_concreteTexture);
 }
 
 bool CMyApp::Init()
@@ -292,9 +290,12 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 3.0, 3.0),	  // honnan nézzük a színteret	     - eye
-		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
+		glm::vec3(0.0,   250.0,  0.0),	       // honnan nézzük a színteret	     - eye
+		glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0,   1.0, 0.0));	       // felfelé mutató irány a világban - up
+
+	// FBO - kezdeti
+	CreateFrameBuffer(800, 600);
 
 	return true;
 }
@@ -316,12 +317,48 @@ void CMyApp::Update( const SUpdateInfo& updateInfo )
 
 void CMyApp::Render()
 {
-	// töröljük a frampuffert (GL_COLOR_BUFFER_BIT)...
-	// ... és a mélységi Z puffert (GL_DEPTH_BUFFER_BIT)
+	/***********************************/
+	/***********************************/
+	/************  FBO-ba  *************/
+	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// - VAO beállítása
 	glBindVertexArray( m_paramSurfaceGPU.vaoID );
+
+	// - Textúrák beállítása, minden egységre külön
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
+	glActiveTexture(GL_TEXTURE2);
+
+	glUseProgram( m_FBOID );
+
+	glUniform1i(ul("heightMapTexture"), 0); // heightmap leküldése a 0-s csatornán
+	glUniform1i(ul("splatMapTexture"), 1);  // splatmap leküldése az 1-es csatornán
+
+	glm::mat4 matWorld = glm::scale(TABLE_SCALE);
+	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
+	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
+	glUniformMatrix4fv( ul( "viewProj" ), 1, GL_FALSE, glm::value_ptr( m_camera.GetViewProj() ) );
+
+	glDrawElements( GL_TRIANGLES,    
+					m_paramSurfaceGPU.count,			 
+					GL_UNSIGNED_INT,
+					nullptr );
+
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/************  DEFAULT *************/
+	// álljunk vissza a default FBO-ra (=frontbuffer)
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// - VAO beállítása
+	glBindVertexArray(m_paramSurfaceGPU.vaoID);
 
 	// - Textúrák beállítása, minden egységre külön
 	glActiveTexture(GL_TEXTURE0);
@@ -335,7 +372,7 @@ void CMyApp::Render()
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, m_grassTexture);
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, m_seamlessGrassTexture);
+	glBindTexture(GL_TEXTURE_2D, m_concreteTexture);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, m_brownTexture);
 	glActiveTexture(GL_TEXTURE7);
@@ -343,72 +380,79 @@ void CMyApp::Render()
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, m_sandTexture);
 
-	glUseProgram( m_programID );
+	glUseProgram(m_programID);
 
 	glUniform1i(ul("heightMapTexture"), 0); // heightmap leküldése a 0-s csatornán
 	glUniform1i(ul("splatMapTexture"), 1);  // splatmap leküldése az 1-es csatornán
-	glUniform1i(ul("greenerGrass"), 2);  
-	glUniform1i(ul("greenTexture"), 3);  
-	glUniform1i(ul("grassTexture"), 4);  
-	glUniform1i(ul("seamlessGrass"), 5);
+	glUniform1i(ul("greenerGrass"), 2);
+	glUniform1i(ul("greenTexture"), 3);
+	glUniform1i(ul("grassTexture"), 4);
+	glUniform1i(ul("concreteTexture"), 5);
 	glUniform1i(ul("brownTexture"), 6);
 	glUniform1i(ul("snowTexture"), 7);
 	glUniform1i(ul("sandTexture"), 8);
 
-	glm::mat4 matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
-	glUniformMatrix4fv( ul( "world" ),    1, GL_FALSE, glm::value_ptr( matWorld ) );
-	glUniformMatrix4fv( ul( "worldIT" ),  1, GL_FALSE, glm::value_ptr( glm::transpose( glm::inverse( matWorld ) ) ) );
-	glUniformMatrix4fv( ul( "viewProj" ), 1, GL_FALSE, glm::value_ptr( m_camera.GetViewProj() ) );
-
-	// - Fényforrások beállítása
-	glUniform3fv( ul( "cameraPos" ), 1, glm::value_ptr( m_camera.GetEye() ) );
-	glUniform4fv( ul( "lightPos" ),  1, glm::value_ptr( m_lightPos ) );
-
-	glUniform3fv( ul( "La" ),		 1, glm::value_ptr( m_La ) );
-	glUniform3fv( ul( "Ld" ),		 1, glm::value_ptr( m_Ld ) );
-	glUniform3fv( ul( "Ls" ),		 1, glm::value_ptr( m_Ls ) );
-
-	glUniform1f( ul( "lightConstantAttenuation"	 ), m_lightConstantAttenuation );
-	glUniform1f( ul( "lightLinearAttenuation"	 ), m_lightLinearAttenuation   );
-	glUniform1f( ul( "lightQuadraticAttenuation" ), m_lightQuadraticAttenuation);
-
-	// - Anyagjellemzők beállítása
-	glUniform3fv( ul( "Ka" ),		 1, glm::value_ptr( m_Ka ) );
-	glUniform3fv( ul( "Kd" ),		 1, glm::value_ptr( m_Kd ) );
-	glUniform3fv( ul( "Ks" ),		 1, glm::value_ptr( m_Ks ) );
-
-	glUniform1f( ul( "Shininess" ),	m_Shininess );
-
-	glDrawElements( GL_TRIANGLES,    
-					m_paramSurfaceGPU.count,			 
-					GL_UNSIGNED_INT,
-					nullptr );
-
-	/***********************************/
-	/***********************************/
-	/************ BUILDING *************/
-
-	glBindVertexArray(m_flatHoustGPU.vaoID);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
-	
-	glUseProgram(m_buildingID);
-	
-	glUniform1i(ul("texImage"), 0);
-
-	matWorld = glm::mat4(1.0f) * glm::scale(BUILDING_SCALE);
+	matWorld = glm::mat4(1.0f) * glm::scale(TABLE_SCALE);
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
 
+	// - Fényforrások beállítása
+	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
+	glUniform4fv(ul("lightPos"), 1, glm::value_ptr(m_lightPos));
+
+	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
+	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
+	glUniform3fv(ul("Ls"), 1, glm::value_ptr(m_Ls));
+
+	glUniform1f(ul("lightConstantAttenuation"), m_lightConstantAttenuation);
+	glUniform1f(ul("lightLinearAttenuation"), m_lightLinearAttenuation);
+	glUniform1f(ul("lightQuadraticAttenuation"), m_lightQuadraticAttenuation);
+
+	// - Anyagjellemzők beállítása
+	glUniform3fv(ul("Ka"), 1, glm::value_ptr(m_Ka));
+	glUniform3fv(ul("Kd"), 1, glm::value_ptr(m_Kd));
+	glUniform3fv(ul("Ks"), 1, glm::value_ptr(m_Ks));
+
+	glUniform1f(ul("Shininess"), m_Shininess);
+
 	glDrawElements(GL_TRIANGLES,
-				   m_flatHoustGPU.count,
-				   GL_UNSIGNED_INT,
-				   nullptr);
+		m_paramSurfaceGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
 
 	/***********************************/
 	/***********************************/
+	/************ BUILDING *************/
+	for (auto pos : m_buildingTypePositionVector) {
+		switch (pos.type) {
+			case FLAT_HOUSE:
+				RenderFlatAndBlockHouse(pos.buildingPosition, FLAT_HOUSE);
+				break;
+			case BLOCK_HOUSE:
+				RenderFlatAndBlockHouse(pos.buildingPosition, BLOCK_HOUSE);
+				break;
+			case LITTLE_HOUSE:
+				RenderLittleHouse(pos.buildingPosition);
+				break;
+			case FAMILY_HOUSE:
+				RenderFamilyHouse(pos.buildingPosition);
+				break;
+		}
+	}
+
+	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), BLOCK_HOUSE);
+	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), FLAT_HOUSE);
+	RenderLittleHouse(glm::vec3(0.0, 0.0, 0.0));	
+	// RenderFamilyHouse(glm::vec3(0.0, 0.0, 0.0));
+
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/***********************************/
+	/*********** TAKARÍTÁS *************/
 
 	// shader kikapcsolasa
 	glUseProgram( 0 );
@@ -427,6 +471,247 @@ void CMyApp::Render()
 
 	// VAO kikapcsolása
 	glBindVertexArray( 0 );
+}
+
+void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType type) {
+	glBindVertexArray(m_flatHoustGPU.vaoID);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	glm::mat4 matWorld;
+	if (type == FLAT_HOUSE) {
+		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+	}
+	else {
+		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetBlockRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetBlockScale());
+	}
+
+	//glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * ;
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_flatHoustGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
+}
+
+void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
+	RenderFlatAndBlockHouse(buildingPosition, FLAT_HOUSE); // először kirendereljük a flathouse-t
+
+	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
+	glBindVertexArray(m_littleHouseGPU.vaoID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	// megfelelőre méretezzük, majd rátoljuk a kisház tetejére
+	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY() * 2, 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_littleHouseGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
+}
+
+void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
+	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
+	glBindVertexArray(m_familyHouseGPU.vaoID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_houseTexture);
+
+	glUseProgram(m_buildingID);
+
+	glUniform1i(ul("texImage"), 0);
+
+	// megfelelőre méretezzük
+	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
+	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	glDrawElements(GL_TRIANGLES,
+		m_familyHouseGPU.count,
+		GL_UNSIGNED_INT,
+		nullptr);
+
+	// Textúrák kikapcsolása
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// VAO kikapcsolása
+	glBindVertexArray(0);
+
+	// Shader kikapcsolása
+	glUseProgram(0);
+}
+
+glm::vec2 CMyApp::GetRadiusPixels(BuildingType type) {
+	// meghatározzuk az adott típusú épülethez tartozó X és Z sugarakat
+	int radiusX;
+	int radiusZ;
+	switch (type) {
+	case FLAT_HOUSE:
+		radiusX = m_flatHouse.GetFlatRadiusX();
+		radiusZ = m_flatHouse.GetFlatRadiusZ();
+		break;
+	case BLOCK_HOUSE:
+		radiusX = m_flatHouse.GetBlockRadiusX();
+		radiusZ = m_flatHouse.GetBlockRadiusZ();
+		break;
+	case LITTLE_HOUSE:
+		radiusX = m_littleHouse.GetRadiusX();
+		radiusZ = m_littleHouse.GetRadiusZ();
+		break;
+	case FAMILY_HOUSE:
+		radiusX = m_familyHouse.GetRadiusX();
+		radiusZ = m_familyHouse.GetRadiusZ();
+		break;
+	}
+
+	std::cout << "X: " << radiusX << '\n';
+	std::cout << "Z: " << radiusZ << '\n';
+
+	// belehelyezzük a sugarakat a megfelelő folbontású rendszerbe
+	float intermediateX = static_cast<float>(radiusX) / TABLE_SCALE.x;
+	float intermediateZ = static_cast<float>(radiusZ) / TABLE_SCALE.z;
+	int radiusPixelsX = static_cast<int>(intermediateX * TABLE_RESOLUTION);
+	int radiusPixelsZ = static_cast<int>(intermediateZ * TABLE_RESOLUTION);
+
+	std::cout << "Intermediate X: " << intermediateX << '\n';
+	std::cout << "Intermediate Z: " << intermediateZ << '\n';
+
+	std::cout << "radiusPixels X: " << radiusPixelsX << '\n';
+	std::cout << "radiusPixels Z: " << radiusPixelsZ << '\n';
+
+	return glm::vec2(radiusPixelsX, radiusPixelsZ);
+}
+
+void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv, BuildingType type) {
+	/******************************************************/
+	/**************** KISIMÍTJUK A TALAJT *****************/
+	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
+	// u és v esetén megszorozzuk csak az adott koordinátákat a felbontással
+	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
+	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
+	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
+	glm::vec2 radiusPixelCoordinates = GetRadiusPixels(type);
+	int radiusPixelsX = radiusPixelCoordinates.x;
+	int radiusPixelsZ = radiusPixelCoordinates.y;
+
+	// kiolvassuk az m_heightMapData-ból az adott koordinátákohoz tartozó értéket
+	float totalHeight = 0.0f;
+	int count = 0;
+
+	// az adott sugár mentén kiolvassuk az értéket a m_heightMapData tömbből
+	for (int i = -radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+		for (int j = -radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
+			// végigmenyünk a teljes sugár mentén
+			int x = uCoord + i;
+			int y = vCoord + j;
+
+			// biztonsági ellenőrzés
+			if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+				totalHeight += m_heightMapData[y * TABLE_RESOLUTION + x];
+				count++;
+			}
+		}
+	}
+
+	std::cout << "TOTAL HEIGHT: " << totalHeight << '\n';
+	std::cout << "COUNT " << count << '\n';
+
+	// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, 
+	// módosítjuk a megfelelő magasságértékeket az átlagra
+	if (count > 0) {
+		float averageHeight = totalHeight / static_cast<float>(count);
+		std::cout << "AVERAGE " << averageHeight << '\n';
+
+		// ismét végigmegyünk a heightmap tömbön, módosítunk minden értéket az átlagoltra
+		for (int i = -radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+			for (int j = -radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
+				// végigmegyünk a teljes sugár mentén
+				int x = uCoord + i;
+				int y = vCoord + j;
+
+				// biztonsági ellenőrzés
+				if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+					m_heightMapData[y * TABLE_RESOLUTION + x] = averageHeight;
+				}
+			}
+		}
+
+		// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
+		glGenTextures(1, &m_heightMapTexture);
+		glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, TABLE_RESOLUTION, TABLE_RESOLUTION, 0, GL_RED, GL_FLOAT, m_heightMapData.data());
+		SetupTextureSampling(GL_TEXTURE_2D, m_heightMapTexture);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+}
+
+void CMyApp::PlaceConcreteUnderBuilding(glm::vec2 uv, BuildingType type) {
+	/******************************************************/
+	/**************** BETONT HELYEZÜNK LE *****************/
+	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
+	// u és v esetén megszorozzuk csak az adott koordinátákat a felbontással
+	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
+	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
+	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
+	glm::vec2 radiusPixelCoordinates = GetRadiusPixels(type);
+	int radiusPixelsX = radiusPixelCoordinates.x;
+	int radiusPixelsZ = radiusPixelCoordinates.y;
+
+	// ismét végigmegyünk a splatmapen, kettő sugarú környezetben, majd módosítjuk a megfelelő értékeket
+	for (int i = - radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+		for (int j = - radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
+			// végigmegyünk a teljes sugár mentén
+			int x = uCoord + i;
+			int y = vCoord + j;
+
+			// biztonsági ellenőrzés, majd kinullázzuk az első három csatornát, a negyediket egyre állítjuk
+			if (x >= 0 && x < TABLE_RESOLUTION && y >= 0 && y < TABLE_RESOLUTION) {
+				m_splatMapData[y * TABLE_RESOLUTION + x] = { 0.0, 0.0, 0.0, 1.0, };
+			}
+		}
+	}
+
+	// módosítjuk a textúrát, ami majd a renderben le fog küldődni megfelelően
+	glBindTexture(GL_TEXTURE_2D, m_splatMapTexture);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TABLE_RESOLUTION, TABLE_RESOLUTION, GL_RGBA, GL_FLOAT, m_splatMapData.data());
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void CMyApp::RenderGUI()
@@ -474,11 +759,6 @@ GLint CMyApp::ul( const char* uniformName ) noexcept
 	return glGetUniformLocation( programID, uniformName );
 }
 
-// https://wiki.libsdl.org/SDL2/SDL_KeyboardEvent
-// https://wiki.libsdl.org/SDL2/SDL_Keysym
-// https://wiki.libsdl.org/SDL2/SDL_Keycode
-// https://wiki.libsdl.org/SDL2/SDL_Keymod
-
 void CMyApp::KeyboardDown(const SDL_KeyboardEvent& key)
 {	
 	if ( key.repeat == 0 ) // Először lett megnyomva
@@ -517,6 +797,30 @@ void CMyApp::MouseMove(const SDL_MouseMotionEvent& mouse)
 
 void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 {
+	int x, y;
+	SDL_GetMouseState(&x, &y); // kattintás koordinátáinak meghatározása
+	std::cout << x << " " << y << "\n";
+
+	// kiolvassuk a framebufferből az adott pixelhez tartozó UV értékeket
+	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+	glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
+
+	if ((*m_data).z == 1) {
+		float u = (*m_data).x;
+		float v = (*m_data).y;
+		glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
+
+		FlattenTerrainUnderBuilding(glm::vec2(u, v), selectedBuilding); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
+		PlaceConcreteUnderBuilding(glm::vec2(u, v), selectedBuilding);  // betont helyezünk le az épület alá
+
+		// miután módosítottuk a magasságértéket, kiolvassuk a már módosítottat, hogy jó magasságra helyezzük le az épületeket
+		int uCoord = static_cast<int>(u * TABLE_RESOLUTION);
+		int vCoord = static_cast<int>(v * TABLE_RESOLUTION);
+		float height = m_heightMapData[vCoord * TABLE_RESOLUTION + uCoord] * SCALE_VALUE;
+		
+		StoredBuilding current{ glm::vec3(pos.x, height, pos.z), selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
+		m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+	}
 }
 
 void CMyApp::MouseUp(const SDL_MouseButtonEvent& mouse)
@@ -534,7 +838,76 @@ void CMyApp::MouseWheel(const SDL_MouseWheelEvent& wheel)
 // a két paraméterben az új ablakméret szélessége (_w) és magassága (_h) található
 void CMyApp::Resize(int _w, int _h)
 {
+	width = _w;
+	height = _h;
 	glViewport(0, 0, _w, _h);
 	m_camera.Resize( _w, _h );
+	CreateFrameBuffer(_w, _h);
+}
+
+void CMyApp::CreateFrameBuffer(int width, int height)
+{
+	// takarítsunk, ha nem először hívják ezt a függvényt
+	if (m_frameBufferCreated)
+	{
+		glDeleteRenderbuffers(1, &m_depthBuffer);
+		glDeleteTextures(1, &m_colorBuffer);
+		glDeleteFramebuffers(1, &m_frameBuffer);
+	}
+
+	glGenFramebuffers(1, &m_frameBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+
+	glGenTextures(1, &m_colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, m_colorBuffer);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorBuffer, 0);
+	if (glGetError() != GL_NO_ERROR)
+	{
+		std::cout << "Error creating color attachment" << std::endl;
+		exit(1);
+	}
+
+	glGenRenderbuffers(1, &m_depthBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_depthBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthBuffer);
+	if (glGetError() != GL_NO_ERROR)
+	{
+		std::cout << "Error creating depth attachment" << std::endl;
+		exit(1);
+	}
+
+	// -- Completeness check
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Incomplete framebuffer (";
+		switch (status) {
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			std::cout << "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_UNSUPPORTED:
+			std::cout << "GL_FRAMEBUFFER_UNSUPPORTED";
+			break;
+		}
+		std::cout << ")" << std::endl;
+		char ch;
+		std::cin >> ch;
+		exit(1);
+	}
+
+	// -- Unbind framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	m_frameBufferCreated = true;
 }
 

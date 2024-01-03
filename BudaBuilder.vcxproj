@@ -83,25 +83,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Building.cpp" />
+    <ClCompile Include="FamilyHouse.cpp" />
+    <ClCompile Include="FlatHouse.cpp" />
+    <ClCompile Include="LittleHouse.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="includes\SDL_GLDebugMessageCallback.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="includes\GLUtils.cpp" />
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
+    <ClCompile Include="Perlin.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="Tower.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Building.hpp" />
+    <ClInclude Include="BuildingTypes.hpp" />
+    <ClInclude Include="FamilyHouse.hpp" />
+    <ClInclude Include="FlatHouse.hpp" />
     <ClInclude Include="includes\FastNoiseLite.h" />
+    <ClInclude Include="LittleHouse.hpp" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />
     <ClInclude Include="includes\Camera.h" />
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
+    <ClInclude Include="Perlin.hpp" />
+    <ClInclude Include="Tower.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Frag_Building.frag" />
+    <None Include="Frag_FBO.frag" />
     <None Include="Vert_Building.vert" />
     <None Include="Vert_PosNormTex.vert" />
     <None Include="Frag_Lighting.frag" />
@@ -109,6 +123,7 @@
   <ItemGroup>
     <Image Include="Assets\board.png" />
     <Image Include="Assets\brown.jpg" />
+    <Image Include="Assets\concrete.jpg" />
     <Image Include="Assets\grass.jpg" />
     <Image Include="Assets\green.jpg" />
     <Image Include="Assets\greener_grass.jpg" />
