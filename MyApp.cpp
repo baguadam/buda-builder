@@ -534,7 +534,7 @@ void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType ty
 }
 
 void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
-	RenderFlatAndBlockHouse(buildingPosition, FLAT_HOUSE); // először kirendereljük a flathouse-t
+	// RenderFlatAndBlockHouse(buildingPosition, FLAT_HOUSE); // először kirendereljük a flathouse-t
 
 	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
 	glBindVertexArray(m_littleHouseGPU.vaoID);
@@ -546,7 +546,8 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük, majd rátoljuk a kisház tetejére
-	glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY() * 2, 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+	glm::mat4 matWorld = glm::translate(buildingPosition);
+	// glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY() * 2, 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
