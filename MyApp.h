@@ -107,12 +107,9 @@ protected:
 	int m_currentMinutes;
 
 	// A parametrikus felülettel kapcsolatos változók
-	static constexpr float       TABLE_RESOLUTION = 256.0f;
+	static constexpr float       TABLE_RESOLUTION = 512.0f;
 	static constexpr int	     SCALE_VALUE = 200;
-	static constexpr glm::vec3   TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
-
-	static constexpr float	   FLAT_BUILDING_RADIUS   = 4.0;
-	static constexpr float	   FLAT_BUILDING_RADIUS_Y = 2.2;
+	static constexpr glm::vec3   TABLE_SCALE = glm::vec3(600.0f, 1.0f, 600.0f);
 
 	// heightmap
 	std::vector<float> noiseData;
