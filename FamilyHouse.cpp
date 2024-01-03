@@ -104,3 +104,4 @@ MeshObject<Vertex> FamilyHouse::GetMesh() { return meshCPU; }
 int FamilyHouse::GetRadiusX() const { return radiusX; }
 int FamilyHouse::GetRadiusY() const { return radiusY; }
 int FamilyHouse::GetRadiusZ() const { return radiusZ; }
+glm::vec3 FamilyHouse::GetScale() const { return FAMILY_HOUSE_SCALE; }

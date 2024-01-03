@@ -595,7 +595,7 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük
-	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0)) * glm::scale(m_familyHouse.GetScale());
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));

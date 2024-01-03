@@ -54,8 +54,7 @@ private:
 	void UpdateParams();
 	
 	//  The traversal speed of the camera
-	float	m_speed = 16.0f;
-	
+	float	m_speed = 50.0f;
 
 	bool	m_slow = false;
 
@@ -87,7 +86,6 @@ private:
 	
 	// The vector pointing upwards
 	glm::vec3   m_up;
-
 
 	float	m_goForward = 0.0f;
 	float	m_goRight   = 0.0f;
