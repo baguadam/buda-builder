@@ -116,9 +116,11 @@
   <ItemGroup>
     <None Include="Frag_Building.frag" />
     <None Include="Frag_FBO.frag" />
+    <None Include="Frag_skybox.frag" />
     <None Include="Vert_Building.vert" />
     <None Include="Vert_PosNormTex.vert" />
     <None Include="Frag_Lighting.frag" />
+    <None Include="Vert_skybox.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\board.png" />
