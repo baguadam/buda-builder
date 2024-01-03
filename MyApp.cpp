@@ -804,24 +804,22 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	// kiolvassuk a framebufferből az adott pixelhez tartozó UV értékeket
 	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
 	glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, (void*)m_data);
-	float u = (*m_data).x;
-	float v = (*m_data).y;
-	glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
-
-	// kiolvassuk a magasságtérkép textúrájából, hogy az adott UV koordinátákhoz milyen magasság tartozik
-	glBindTexture(GL_TEXTURE_2D, m_heightMapTexture);
-	GLubyte* texData = new GLubyte[TABLE_RESOLUTION * TABLE_RESOLUTION];
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, texData);
-	int index = (int)(v * TABLE_RESOLUTION) * TABLE_RESOLUTION + (int)(u * TABLE_RESOLUTION);
-	float height = texData[index] / 255.0f * SCALE_VALUE; // eltároljuk az oda tartozó magasságot, a kiolvasott értéket megszorozzuk a max. magassággal
-	delete[] texData;
 
 	if ((*m_data).z == 1) {
-		StoredBuilding current{ glm::vec3(pos.x, height, pos.z), selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
-		m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+		float u = (*m_data).x;
+		float v = (*m_data).y;
+		glm::vec3 pos = ParamPlane().GetPos(u, v); // meghatározzuk a pozíciót
 
 		FlattenTerrainUnderBuilding(glm::vec2(u, v), selectedBuilding); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
 		PlaceConcreteUnderBuilding(glm::vec2(u, v), selectedBuilding);  // betont helyezünk le az épület alá
+
+		// miután módosítottuk a magasságértéket, kiolvassuk a már módosítottat, hogy jó magasságra helyezzük le az épületeket
+		int uCoord = static_cast<int>(u * TABLE_RESOLUTION);
+		int vCoord = static_cast<int>(v * TABLE_RESOLUTION);
+		float height = m_heightMapData[vCoord * TABLE_RESOLUTION + uCoord] * SCALE_VALUE;
+		
+		StoredBuilding current{ glm::vec3(pos.x, height, pos.z), selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
+		m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
 	}
 }
 
