@@ -42,6 +42,19 @@ void CMyApp::InitShaders()
 
 	m_FBOID = glCreateProgram();
 	AssembleProgram(m_FBOID, "Vert_PosNormTex.vert", "Frag_FBO.frag");
+
+	InitSkyboxShaders();
+}
+
+void CMyApp::InitSkyboxShaders()
+{
+	m_programSkyboxID = glCreateProgram();
+	AssembleProgram(m_programSkyboxID, "Vert_skybox.vert", "Frag_skybox.frag");
+}
+
+void CMyApp::CleanSkyboxShaders()
+{
+	glDeleteProgram(m_programSkyboxID);
 }
 
 void CMyApp::CleanShaders()
@@ -49,6 +62,8 @@ void CMyApp::CleanShaders()
 	glDeleteProgram(m_programID);
 	glDeleteProgram(m_buildingID);
 	glDeleteProgram(m_FBOID);
+
+	CleanSkyboxShaders();
 }
 
 // Nyers parameterek
@@ -70,10 +85,62 @@ struct ParamPlane
 	}
 };
 
+void CMyApp::InitSkyboxGeometry()
+{
+	// skybox geo
+	MeshObject<glm::vec3> skyboxCPU =
+	{
+		std::vector<glm::vec3>
+		{
+			// hátsó lap
+			glm::vec3(-1, -1, -1),
+			glm::vec3(1, -1, -1),
+			glm::vec3(1,  1, -1),
+			glm::vec3(-1,  1, -1),
+			// elülső lap
+			glm::vec3(-1, -1, 1),
+			glm::vec3(1, -1, 1),
+			glm::vec3(1,  1, 1),
+			glm::vec3(-1,  1, 1),
+		},
+
+		std::vector<GLuint>
+		{
+			// hátsó lap
+			0, 1, 2,
+			2, 3, 0,
+			// elülső lap
+			4, 6, 5,
+			6, 4, 7,
+			// bal
+			0, 3, 4,
+			4, 3, 7,
+			// jobb
+			1, 5, 2,
+			5, 6, 2,
+			// alsó
+			1, 0, 4,
+			1, 4, 5,
+			// felső
+			3, 2, 6,
+			3, 6, 7,
+		}
+	};
+
+	m_SkyboxGPU = CreateGLObjectFromMesh(skyboxCPU, { { 0, offsetof(glm::vec3,x), 3, GL_FLOAT } });
+}
+
+void CMyApp::CleanSkyboxGeometry()
+{
+	CleanOGLObject(m_SkyboxGPU);
+}
+
 void CMyApp::InitGeometry()
 {
-	// hegihtmap inicializálása
+	// Skybox
+	InitSkyboxGeometry();
 
+	// hegihtmap inicializálása
 	const std::initializer_list<VertexAttributeDescriptor> vertexAttribList =
 	{
 		{ 0, offsetof( Vertex, texcoord ), 2, GL_FLOAT },
@@ -107,6 +174,8 @@ void CMyApp::CleanGeometry()
 	CleanOGLObject(m_flatHoustGPU);
 	CleanOGLObject(m_littleHouseGPU);
 	CleanOGLObject(m_familyHouseGPU);
+
+	CleanSkyboxGeometry();
 }
 
 std::vector<float> CMyApp::GenerateHeightMap() {
@@ -459,6 +528,32 @@ void CMyApp::Render()
 				break;
 		}
 	}
+
+	/************************************/
+	/************************************/
+	/************ SKYBOX *************/
+	// - VAO
+	glBindVertexArray(m_SkyboxGPU.vaoID);
+
+	// - Program
+	glUseProgram(m_programSkyboxID);
+
+	// - uniform parameterek
+	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(glm::translate(m_camera.GetEye())));
+	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+	glUniform3fv(ul("lightColor"), 1, glm::value_ptr(m_lightColor));
+
+	// mentsük el az előző Z-test eredményt, azaz azt a relációt, ami alapján update-eljük a pixelt.
+	GLint prevDepthFnc;
+	glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFnc);
+
+	// most kisebb-egyenlőt használjunk, mert mindent kitolunk a távoli vágósíkokra
+	glDepthFunc(GL_LEQUAL);
+
+	// - Rajzolas
+	glDrawElements(GL_TRIANGLES, m_SkyboxGPU.count, GL_UNSIGNED_INT, nullptr);
+
+	glDepthFunc(prevDepthFnc);
 
 	/***********************************/
 	/***********************************/

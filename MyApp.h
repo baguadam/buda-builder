@@ -101,8 +101,8 @@ protected:
 	float m_time;
 	glm::vec4 m_sunMoonDirectionalLight = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
 	glm::vec3 m_lightColor;
-	glm::vec3 CMyApp::InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t);
-	glm::vec3 CMyApp::CalculateLightColor(float timeOfDay);
+	glm::vec3 InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t);
+	glm::vec3 CalculateLightColor(float timeOfDay);
 	int m_currentHours;
 	int m_currentMinutes;
 
@@ -130,8 +130,9 @@ protected:
 	GLint ul( const char* uniformName ) noexcept;
 
 	// shaderekhez szükséges változók
-	GLuint m_programID  = 0; // shaderek programja
+	GLuint m_programID  = 0;      // shaderek programja
 	GLuint m_buildingID = 0;
+	GLuint m_programSkyboxID = 0; // skybox programja
 	GLuint m_FBOID = 0;
 
 	// Fényforrás- ...
@@ -155,17 +156,22 @@ protected:
 
 	// Shaderek inicializálása, és törtlése
 	void InitShaders();
+	void InitSkyboxShaders();
+	void CleanSkyboxShaders();
 	void CleanShaders();
 
 	// Geometriával kapcsolatos változók
 
 	OGLObject m_paramSurfaceGPU = {};
+	OGLObject m_SkyboxGPU = {};
 	OGLObject m_flatHoustGPU = {};
 	OGLObject m_littleHouseGPU = {};
 	OGLObject m_familyHouseGPU = {};
 
 	// Geometria inicializálása, és törtlése
 	void InitGeometry();
+	void InitSkyboxGeometry();
+	void CleanSkyboxGeometry();
 	void CleanGeometry();
 
 	// Textúrázás, és változói
