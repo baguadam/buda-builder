@@ -89,7 +89,7 @@ protected:
 	glm::vec3* m_data;  // itt fogjuk eltárolni az olvasott koordináta-hármast
 
 	// épület lehelyezés
-	BuildingType selectedBuilding = FLAT_HOUSE;
+	BuildingType selectedBuilding = FAMILY_HOUSE;
 	std::vector<StoredBuilding> m_buildingTypePositionVector{}; // ebben tároljuk az újonnan létrehozott épületek koordinátáit koordinátáit
 
 	// A parametrikus felülettel kapcsolatos változók
