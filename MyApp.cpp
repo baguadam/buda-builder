@@ -317,13 +317,18 @@ void CMyApp::Update( const SUpdateInfo& updateInfo )
 	m_lightPos = glm::vec4( m_camera.GetEye(), 1.0 );
 
 	// 0 és 1 közé normáljuk az időt, hogy 360-nal megszorozva kapjunk egy szöget, éppen hol van a nap/hold
-	float time = fmod(m_ElapsedTimeInSec / m_dayDuration, 1.0f);
-	float sunAngle = time * 360.0f;
+	m_time = fmod(m_ElapsedTimeInSec / m_dayDuration, 1.0f);
+	float sunAngle = m_time * 360.0f;
 	m_sunMoonDirectionalLight = glm::vec4(m_sunRadius * cosf(glm::radians(sunAngle)),
 									      300.0f,
 									      m_sunRadius * sinf(glm::radians(sunAngle)), 
 									      0.0);
-	m_lightColor = CalculateLightColor(time); // kiszmáoljuk az adott időponthoz tartozó fény színét
+	m_lightColor = CalculateLightColor(m_time); // kiszmáoljuk az adott időponthoz tartozó fény színét
+
+	// meghatározzuk a jelenlegi időt órában és percben
+	int totalMinutes = static_cast<int>(m_time * 24.0f * 60.0f);
+	m_currentHours = totalMinutes / 60;
+	m_currentMinutes = totalMinutes % 60;
 }
 
 void CMyApp::Render()
@@ -807,7 +812,6 @@ void CMyApp::RenderGUI()
 	}
 	ImGui::End();
 
-
 	if (ImGui::Begin("Building chooser")) {
 		ImGui::SeparatorText("Buildings");
 
@@ -846,7 +850,12 @@ void CMyApp::RenderGUI()
 		}
 		ImGui::Text("Selected Building Type: %s", buildingTypeText);
 	}
+	ImGui::End();
 
+	if (ImGui::Begin("Time")) {
+		ImGui::SeparatorText("Time of the day");
+		ImGui::Text("Current Time: %02d:%02d", m_currentHours, m_currentMinutes);
+	}
 	ImGui::End();
 }
 
@@ -886,28 +895,32 @@ bool CMyApp::CheckBuildingCollisions(glm::vec3 newPosition, BuildingType type) {
 	return false;
 }
 
-// szín interpolálása
 glm::vec3 CMyApp::InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t) {
+	// lineáris interpoláció
 	return (1.0f - t) * color1 + t * color2;
 }
 
-// az adott szí} kiszmámítása az eltelt idő függvényében, használva az interpolálást a lány átmenetekhez
 glm::vec3 CMyApp::CalculateLightColor(float timeOfDay) {
-	// adott színek a napszaknak megfelelően
+	// a megfelelő színek kódjai
 	glm::vec3 paleWhite = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 deepBlue  = glm::vec3(0.0f, 0.0f, 0.5f);
 	glm::vec3 yellow    = glm::vec3(1.0f, 1.0f, 0.0f);
+	glm::vec3 white     = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 orange    = glm::vec3(1.0f, 0.5f, 0.0f);
 
-	// interpoláljuk a színt az adott időnek megfelelően
-	if (timeOfDay >= 0.0f && timeOfDay < 0.25f)
-		return InterpolateColor(paleWhite, deepBlue, timeOfDay / 0.25f);
-	else if (timeOfDay >= 0.25f && timeOfDay < 0.5f)
-		return InterpolateColor(deepBlue, yellow, (timeOfDay - 0.25f) / 0.25f);
-	else if (timeOfDay >= 0.5f && timeOfDay < 0.75f)
-		return InterpolateColor(yellow, paleWhite, (timeOfDay - 0.5f) / 0.25f);
+	// interpoláljuk a színeket a napszaktól függően, hogy folyamatos átmenet legyen közöttük
+	if (timeOfDay >= 0.0f && timeOfDay < 0.1f)
+		return InterpolateColor(paleWhite, deepBlue, timeOfDay / 0.1f);
+	else if (timeOfDay >= 0.1f && timeOfDay < 0.3f)
+		return InterpolateColor(deepBlue, yellow, (timeOfDay - 0.1f) / 0.2f);
+	else if (timeOfDay >= 0.3f && timeOfDay < 0.5f)
+		return InterpolateColor(yellow, white, (timeOfDay - 0.3f) / 0.2f);
+	else if (timeOfDay >= 0.5f && timeOfDay < 0.7f)
+		return InterpolateColor(white, orange, (timeOfDay - 0.5f) / 0.2f);
+	else if (timeOfDay >= 0.7f && timeOfDay < 0.9f)
+		return InterpolateColor(orange, deepBlue, (timeOfDay - 0.7f) / 0.2f);
 	else
-		return InterpolateColor(paleWhite, orange, (timeOfDay - 0.75f) / 0.25f);
+		return InterpolateColor(deepBlue, paleWhite, (timeOfDay - 0.9f) / 0.1f);
 }
 
 GLint CMyApp::ul( const char* uniformName ) noexcept
@@ -1000,7 +1013,6 @@ void CMyApp::MouseWheel(const SDL_MouseWheelEvent& wheel)
 {
 	m_camera.MouseWheel( wheel );
 }
-
 
 // a két paraméterben az új ablakméret szélessége (_w) és magassága (_h) található
 void CMyApp::Resize(int _w, int _h)
