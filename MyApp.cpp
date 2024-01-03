@@ -315,6 +315,15 @@ void CMyApp::Update( const SUpdateInfo& updateInfo )
 
 	m_camera.Update( updateInfo.DeltaTimeInSec );
 	m_lightPos = glm::vec4( m_camera.GetEye(), 1.0 );
+
+	// 0 és 1 közé normáljuk az időt, hogy 360-nal megszorozva kapjunk egy szöget, éppen hol van a nap/hold
+	float time = fmod(m_ElapsedTimeInSec / m_dayDuration, 1.0f);
+	float sunAngle = time * 360.0f;
+	m_sunMoonDirectionalLight = glm::vec4(m_sunRadius * cosf(glm::radians(sunAngle)),
+									      300.0f,
+									      m_sunRadius * sinf(glm::radians(sunAngle)), 
+									      0.0);
+	m_lightColor = CalculateLightColor(time); // kiszmáoljuk az adott időponthoz tartozó fény színét
 }
 
 void CMyApp::Render()
@@ -403,6 +412,8 @@ void CMyApp::Render()
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -867,6 +878,30 @@ bool CMyApp::CheckBuildingCollisions(glm::vec3 newPosition, BuildingType type) {
 
 	// az egész végén, amennyiben nem volt ütközés, akkor visszatérünk false-szal
 	return false;
+}
+
+// szín interpolálása
+glm::vec3 CMyApp::InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t) {
+	return (1.0f - t) * color1 + t * color2;
+}
+
+// az adott szí} kiszmámítása az eltelt idő függvényében, használva az interpolálást a lány átmenetekhez
+glm::vec3 CMyApp::CalculateLightColor(float timeOfDay) {
+	// adott színek a napszaknak megfelelően
+	glm::vec3 paleWhite = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 deepBlue  = glm::vec3(0.0f, 0.0f, 0.5f);
+	glm::vec3 yellow    = glm::vec3(1.0f, 1.0f, 0.0f);
+	glm::vec3 orange    = glm::vec3(1.0f, 0.5f, 0.0f);
+
+	// interpoláljuk a színt az adott időnek megfelelően
+	if (timeOfDay >= 0.0f && timeOfDay < 0.25f)
+		return InterpolateColor(paleWhite, deepBlue, timeOfDay / 0.25f);
+	else if (timeOfDay >= 0.25f && timeOfDay < 0.5f)
+		return InterpolateColor(deepBlue, yellow, (timeOfDay - 0.25f) / 0.25f);
+	else if (timeOfDay >= 0.5f && timeOfDay < 0.75f)
+		return InterpolateColor(yellow, paleWhite, (timeOfDay - 0.5f) / 0.25f);
+	else
+		return InterpolateColor(paleWhite, orange, (timeOfDay - 0.75f) / 0.25f);
 }
 
 GLint CMyApp::ul( const char* uniformName ) noexcept

@@ -95,6 +95,14 @@ protected:
 	BuildingType selectedBuilding = FLAT_HOUSE;
 	std::vector<StoredBuilding> m_buildingTypePositionVector{}; // ebben tároljuk az újonnan létrehozott épületek koordinátáit koordinátáit
 
+	// napszakváltás
+	float m_dayDuration = 30.0f;
+	float m_sunRadius = 200.0f;
+	glm::vec4 m_sunMoonDirectionalLight = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	glm::vec3 m_lightColor;
+	glm::vec3 CMyApp::InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t);
+	glm::vec3 CMyApp::CalculateLightColor(float timeOfDay);
+
 	// A parametrikus felülettel kapcsolatos változók
 	static constexpr float       TABLE_RESOLUTION = 256.0f;
 	static constexpr int	     SCALE_VALUE = 200;
