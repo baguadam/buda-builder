@@ -315,6 +315,20 @@ void CMyApp::Update( const SUpdateInfo& updateInfo )
 
 	m_camera.Update( updateInfo.DeltaTimeInSec );
 	m_lightPos = glm::vec4( m_camera.GetEye(), 1.0 );
+
+	// 0 és 1 közé normáljuk az időt, hogy 360-nal megszorozva kapjunk egy szöget, éppen hol van a nap/hold
+	m_time = fmod(m_ElapsedTimeInSec / m_dayDuration, 1.0f);
+	float sunAngle = m_time * 360.0f;
+	m_sunMoonDirectionalLight = glm::vec4(m_sunRadius * cosf(glm::radians(sunAngle)),
+									      300.0f,
+									      m_sunRadius * sinf(glm::radians(sunAngle)), 
+									      0.0);
+	m_lightColor = CalculateLightColor(m_time); // kiszmáoljuk az adott időponthoz tartozó fény színét
+
+	// meghatározzuk a jelenlegi időt órában és percben
+	int totalMinutes = static_cast<int>(m_time * 24.0f * 60.0f);
+	m_currentHours = totalMinutes / 60;
+	m_currentMinutes = totalMinutes % 60;
 }
 
 void CMyApp::Render()
@@ -403,6 +417,8 @@ void CMyApp::Render()
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -498,6 +514,8 @@ void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType ty
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -552,6 +570,8 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -595,7 +615,7 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük
-	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0)) * glm::scale(m_familyHouse.GetScale());
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -604,6 +624,8 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
 	glUniform4fv(ul("lightPosFirst"), 1, glm::value_ptr(m_lightPos));
 	glUniform4fv(ul("lightPosSecond"), 1, glm::value_ptr(m_lightPosSecond));
+	glUniform3fv(ul("sunMoonLightColor"), 1, glm::value_ptr(m_lightColor));
+	glUniform4fv(ul("sunMoonDirection"), 1, glm::value_ptr(m_sunMoonDirectionalLight));
 
 	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
 	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
@@ -790,7 +812,6 @@ void CMyApp::RenderGUI()
 	}
 	ImGui::End();
 
-
 	if (ImGui::Begin("Building chooser")) {
 		ImGui::SeparatorText("Buildings");
 
@@ -829,7 +850,12 @@ void CMyApp::RenderGUI()
 		}
 		ImGui::Text("Selected Building Type: %s", buildingTypeText);
 	}
+	ImGui::End();
 
+	if (ImGui::Begin("Time")) {
+		ImGui::SeparatorText("Time of the day");
+		ImGui::Text("Current Time: %02d:%02d", m_currentHours, m_currentMinutes);
+	}
 	ImGui::End();
 }
 
@@ -867,6 +893,34 @@ bool CMyApp::CheckBuildingCollisions(glm::vec3 newPosition, BuildingType type) {
 
 	// az egész végén, amennyiben nem volt ütközés, akkor visszatérünk false-szal
 	return false;
+}
+
+glm::vec3 CMyApp::InterpolateColor(glm::vec3 color1, glm::vec3 color2, float t) {
+	// lineáris interpoláció
+	return (1.0f - t) * color1 + t * color2;
+}
+
+glm::vec3 CMyApp::CalculateLightColor(float timeOfDay) {
+	// a megfelelő színek kódjai
+	glm::vec3 paleWhite = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 deepBlue  = glm::vec3(0.0f, 0.0f, 0.5f);
+	glm::vec3 yellow    = glm::vec3(1.0f, 1.0f, 0.0f);
+	glm::vec3 white     = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 orange    = glm::vec3(1.0f, 0.5f, 0.0f);
+
+	// interpoláljuk a színeket a napszaktól függően, hogy folyamatos átmenet legyen közöttük
+	if (timeOfDay >= 0.0f && timeOfDay < 0.1f)
+		return InterpolateColor(paleWhite, deepBlue, timeOfDay / 0.1f);
+	else if (timeOfDay >= 0.1f && timeOfDay < 0.3f)
+		return InterpolateColor(deepBlue, yellow, (timeOfDay - 0.1f) / 0.2f);
+	else if (timeOfDay >= 0.3f && timeOfDay < 0.5f)
+		return InterpolateColor(yellow, white, (timeOfDay - 0.3f) / 0.2f);
+	else if (timeOfDay >= 0.5f && timeOfDay < 0.7f)
+		return InterpolateColor(white, orange, (timeOfDay - 0.5f) / 0.2f);
+	else if (timeOfDay >= 0.7f && timeOfDay < 0.9f)
+		return InterpolateColor(orange, deepBlue, (timeOfDay - 0.7f) / 0.2f);
+	else
+		return InterpolateColor(deepBlue, paleWhite, (timeOfDay - 0.9f) / 0.1f);
 }
 
 GLint CMyApp::ul( const char* uniformName ) noexcept
@@ -959,7 +1013,6 @@ void CMyApp::MouseWheel(const SDL_MouseWheelEvent& wheel)
 {
 	m_camera.MouseWheel( wheel );
 }
-
 
 // a két paraméterben az új ablakméret szélessége (_w) és magassága (_h) található
 void CMyApp::Resize(int _w, int _h)

@@ -6,9 +6,11 @@
 
 class FamilyHouse : Building {
 private:
-	int radiusX = 1;
-	int radiusZ = 0.5;
-	int radiusY = 0.5;
+	const glm::vec3 FAMILY_HOUSE_SCALE = glm::vec3(4.0f, 4.0f, 4.0f);
+
+	int radiusX = 4.0;
+	int radiusZ = 2.0;
+	int radiusY = 2.0;
 public:
 	FamilyHouse();
 	~FamilyHouse();
@@ -17,4 +19,5 @@ public:
 	int GetRadiusX() const;
 	int GetRadiusY() const;
 	int GetRadiusZ() const;
+	glm::vec3 GetScale() const;
 };
