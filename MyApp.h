@@ -19,11 +19,19 @@
 #include "FlatHouse.hpp"
 #include "LittleHouse.hpp"
 #include "FamilyHouse.hpp"
+#include "Tower.hpp"
 
 struct SUpdateInfo
 {
 	float ElapsedTimeInSec = 0.0f; // Program indulása óta eltelt idő
 	float DeltaTimeInSec   = 0.0f; // Előző Update óta eltelt idő
+};
+
+struct StoredBuilding {
+	glm::vec3 buildingPosition;
+	BuildingType type;
+
+	StoredBuilding(glm::vec3 _buildingPosition, BuildingType _type) : buildingPosition(_buildingPosition), type(_type) { };
 };
 
 class CMyApp
@@ -65,12 +73,13 @@ protected:
 	// FBO létrehozása
 	void CreateFrameBuffer(int width, int height);
 	// épületek renderelése
-	void RenderFlatHouse(glm::vec3 buildingPosition);
+	void RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType type);
 	void RenderLittleHouse(glm::vec3 buildingPosition);
-	void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition);
+	void RenderFamilyHouse(glm::vec3 buildingPosition);
 	// magasságtérkép lesimítása az épületek alatt, beton elhelyezése
-	void FlattenTerrainUnderBuilding(glm::vec2 uv);
-	void PlaceConcreteUnderBuilding(glm::vec2 uv);
+	glm::vec2 GetRadiusPixels(BuildingType type);
+	void FlattenTerrainUnderBuilding(glm::vec2 uv, BuildingType type);
+	void PlaceConcreteUnderBuilding(glm::vec2 uv, BuildingType type);
 
 	// FBO-hoz szükséges változók
 	bool m_frameBufferCreated{ false };	// Korábban hoztunk már létre FBO-t?
@@ -79,14 +88,15 @@ protected:
 	GLuint m_frameBuffer;				// FBO azonosító
 	glm::vec3* m_data;  // itt fogjuk eltárolni az olvasott koordináta-hármast
 
-	std::vector<glm::vec3> m_buildingPositionVector{}; // ebben tároljuk az újonnan létrehozott épületek koordinátáit koordinátáit
+	// épület lehelyezés
+	BuildingType selectedBuilding = FLAT_HOUSE;
+	std::vector<StoredBuilding> m_buildingTypePositionVector{}; // ebben tároljuk az újonnan létrehozott épületek koordinátáit koordinátáit
 
 	// A parametrikus felülettel kapcsolatos változók
-	static constexpr int       TABLE_RESOLUTION = 256;
-	static constexpr int	   SCALE_VALUE = 200;
-	static constexpr glm::vec3 TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
+	static constexpr float       TABLE_RESOLUTION = 256.0f;
+	static constexpr int	     SCALE_VALUE = 200;
+	static constexpr glm::vec3   TABLE_SCALE = glm::vec3(700.0f, 1.0f, 700.0f);
 
-	static constexpr glm::vec3 BUILDING_SCALE = glm::vec3(4.0f, 2.0f, 4.0f);
 	static constexpr float	   FLAT_BUILDING_RADIUS   = 4.0;
 	static constexpr float	   FLAT_BUILDING_RADIUS_Y = 2.2;
 

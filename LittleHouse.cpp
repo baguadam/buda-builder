@@ -22,6 +22,7 @@ LittleHouse::LittleHouse() : Building(LITTLE_HOUSE) {
 
 LittleHouse::~LittleHouse() {}
 
-MeshObject<Vertex> LittleHouse::GetMesh() {
-	return meshCPU;
-}
+MeshObject<Vertex> LittleHouse::GetMesh() { return meshCPU; }
+int LittleHouse::GetRadiusX() const { return LITTLE_HOUSE_SCALE.x / 2; }
+int LittleHouse::GetRadiusY() const { return LITTLE_HOUSE_SCALE.y / 2; }
+int LittleHouse::GetRadiusZ() const { return LITTLE_HOUSE_SCALE.z / 2; }

@@ -30,5 +30,6 @@ public:
 	Building(BuildingType _type);
 	BuildingType GetType() const;
 	~Building();
+
 	virtual MeshObject<Vertex> GetMesh() = 0;
 };

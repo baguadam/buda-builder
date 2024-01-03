@@ -60,6 +60,13 @@ FlatHouse::FlatHouse() : Building(FLAT_HOUSE) {
 
 FlatHouse::~FlatHouse() {}
 
-MeshObject<Vertex> FlatHouse::GetMesh() {
-	return meshCPU;
-}
+// GETTERS
+MeshObject<Vertex> FlatHouse::GetMesh() { return meshCPU; }
+glm::vec3 FlatHouse::GetFlatScale() const { return FLAT_HOUSE_SCALE; }
+int FlatHouse::GetFlatRadiusX() const { return FLAT_HOUSE_SCALE.x / 2; }
+int FlatHouse::GetFlatRadiusY() const { return FLAT_HOUSE_SCALE.y / 2; }
+int FlatHouse::GetFlatRadiusZ() const { return FLAT_HOUSE_SCALE.z / 2; }
+glm::vec3 FlatHouse::GetBlockScale() const { return BLOCK_HOUSE_SCALE; }
+int FlatHouse::GetBlockRadiusX() const { return BLOCK_HOUSE_SCALE.x / 2; }
+int FlatHouse::GetBlockRadiusY() const { return BLOCK_HOUSE_SCALE.y / 2; }
+int FlatHouse::GetBlockRadiusZ() const { return BLOCK_HOUSE_SCALE.z / 2; }

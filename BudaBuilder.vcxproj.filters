@@ -63,6 +63,9 @@
     <ClCompile Include="FamilyHouse.cpp">
       <Filter>Buildings</Filter>
     </ClCompile>
+    <ClCompile Include="Tower.cpp">
+      <Filter>Buildings</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -102,6 +105,9 @@
       <Filter>Buildings</Filter>
     </ClInclude>
     <ClInclude Include="FamilyHouse.hpp">
+      <Filter>Buildings</Filter>
+    </ClInclude>
+    <ClInclude Include="Tower.hpp">
       <Filter>Buildings</Filter>
     </ClInclude>
   </ItemGroup>

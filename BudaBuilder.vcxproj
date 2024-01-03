@@ -95,6 +95,7 @@
     <ClCompile Include="includes\ObjParser.cpp" />
     <ClCompile Include="Perlin.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="Tower.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Building.hpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
     <ClInclude Include="Perlin.hpp" />
+    <ClInclude Include="Tower.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Frag_Building.frag" />

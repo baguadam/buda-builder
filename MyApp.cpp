@@ -70,7 +70,6 @@ struct ParamPlane
 	}
 };
 
-
 void CMyApp::InitGeometry()
 {
 	// hegihtmap inicializálása
@@ -106,6 +105,8 @@ void CMyApp::CleanGeometry()
 {
 	CleanOGLObject(m_paramSurfaceGPU);
 	CleanOGLObject(m_flatHoustGPU);
+	CleanOGLObject(m_littleHouseGPU);
+	CleanOGLObject(m_familyHouseGPU);
 }
 
 std::vector<float> CMyApp::GenerateHeightMap() {
@@ -289,9 +290,9 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0, 0.0, 5.0),	       // honnan nézzük a színteret	     - eye
-		glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0, 1.0, 0.0));	       // felfelé mutató irány a világban - up
+		glm::vec3(0.0,   250.0,  0.0),	       // honnan nézzük a színteret	     - eye
+		glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0,   1.0, 0.0));	       // felfelé mutató irány a világban - up
 
 	// FBO - kezdeti
 	CreateFrameBuffer(800, 600);
@@ -423,14 +424,27 @@ void CMyApp::Render()
 	/***********************************/
 	/***********************************/
 	/************ BUILDING *************/
-
-	for (auto pos : m_buildingPositionVector) {
-		RenderFlatHouse(pos);
+	for (auto pos : m_buildingTypePositionVector) {
+		switch (pos.type) {
+			case FLAT_HOUSE:
+				RenderFlatAndBlockHouse(pos.buildingPosition, FLAT_HOUSE);
+				break;
+			case BLOCK_HOUSE:
+				RenderFlatAndBlockHouse(pos.buildingPosition, BLOCK_HOUSE);
+				break;
+			case LITTLE_HOUSE:
+				RenderLittleHouse(pos.buildingPosition);
+				break;
+			case FAMILY_HOUSE:
+				RenderFamilyHouse(pos.buildingPosition);
+				break;
+		}
 	}
 
-	// RenderFlatHouse(glm::vec3(0.0, 0.0, 0.0));
+	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), BLOCK_HOUSE);
+	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), FLAT_HOUSE);
 	// RenderLittleHouse(glm::vec3(0.0, 0.0, 0.0));	
-	RenderFamilyHouse(glm::vec3(0.0, 0.0, 0.0));
+	// RenderFamilyHouse(glm::vec3(0.0, 0.0, 0.0));
 
 	/***********************************/
 	/***********************************/
@@ -459,7 +473,7 @@ void CMyApp::Render()
 	glBindVertexArray( 0 );
 }
 
-void CMyApp::RenderFlatHouse(glm::vec3 buildingPosition) {
+void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType type) {
 	glBindVertexArray(m_flatHoustGPU.vaoID);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -469,7 +483,14 @@ void CMyApp::RenderFlatHouse(glm::vec3 buildingPosition) {
 
 	glUniform1i(ul("texImage"), 0);
 
-	glm::mat4 matWorld = glm::identity<glm::mat4>() * glm::scale(BUILDING_SCALE);
+	glm::mat4 matWorld;
+	if (type == FLAT_HOUSE) {
+		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetFlatRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
+	}
+	else {
+		matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, m_flatHouse.GetBlockRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetBlockScale());
+	}
+
 	//glm::mat4 matWorld = glm::translate(buildingPosition * TABLE_SCALE + glm::vec3(0.0, FLAT_BUILDING_RADIUS_Y, 0.0)) * ;
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
@@ -492,7 +513,7 @@ void CMyApp::RenderFlatHouse(glm::vec3 buildingPosition) {
 }
 
 void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
-	RenderFlatHouse(buildingPosition); // először kirendereljük a flathouse-t
+	RenderFlatAndBlockHouse(buildingPosition, FLAT_HOUSE); // először kirendereljük a flathouse-t
 
 	// Ezt követően ehhez mérten rendereljük ki a kisház tetejét és skálázzuk azt
 	glBindVertexArray(m_littleHouseGPU.vaoID);
@@ -504,7 +525,7 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük, majd rátoljuk a kisház tetejére
-	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, BUILDING_SCALE.y / 2, 0.0)) * glm::scale(BUILDING_SCALE);
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_littleHouse.GetRadiusY(), 0.0)) * glm::scale(m_flatHouse.GetFlatScale());
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -536,7 +557,7 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniform1i(ul("texImage"), 0);
 
 	// megfelelőre méretezzük
-	glm::mat4 matWorld = glm::identity<glm::mat4>();
+	glm::mat4 matWorld = glm::translate(buildingPosition + glm::vec3(0.0, m_familyHouse.GetRadiusY(), 0.0));
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
@@ -557,7 +578,48 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUseProgram(0);
 }
 
-void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv) {
+glm::vec2 CMyApp::GetRadiusPixels(BuildingType type) {
+	// meghatározzuk az adott típusú épülethez tartozó X és Z sugarakat
+	int radiusX;
+	int radiusZ;
+	switch (type) {
+	case FLAT_HOUSE:
+		radiusX = m_flatHouse.GetFlatRadiusX();
+		radiusZ = m_flatHouse.GetFlatRadiusZ();
+		break;
+	case BLOCK_HOUSE:
+		radiusX = m_flatHouse.GetBlockRadiusX();
+		radiusZ = m_flatHouse.GetBlockRadiusZ();
+		break;
+	case LITTLE_HOUSE:
+		radiusX = m_littleHouse.GetRadiusX();
+		radiusZ = m_littleHouse.GetRadiusZ();
+		break;
+	case FAMILY_HOUSE:
+		radiusX = m_familyHouse.GetRadiusX();
+		radiusZ = m_familyHouse.GetRadiusZ();
+		break;
+	}
+
+	std::cout << "X: " << radiusX << '\n';
+	std::cout << "Z: " << radiusZ << '\n';
+
+	// belehelyezzük a sugarakat a megfelelő folbontású rendszerbe
+	float intermediateX = static_cast<float>(radiusX) / TABLE_SCALE.x;
+	float intermediateZ = static_cast<float>(radiusZ) / TABLE_SCALE.z;
+	int radiusPixelsX = static_cast<int>(intermediateX * TABLE_RESOLUTION);
+	int radiusPixelsZ = static_cast<int>(intermediateZ * TABLE_RESOLUTION);
+
+	std::cout << "Intermediate X: " << intermediateX << '\n';
+	std::cout << "Intermediate Z: " << intermediateZ << '\n';
+
+	std::cout << "radiusPixels X: " << radiusPixelsX << '\n';
+	std::cout << "radiusPixels Z: " << radiusPixelsZ << '\n';
+
+	return glm::vec2(radiusPixelsX, radiusPixelsZ);
+}
+
+void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv, BuildingType type) {
 	/******************************************************/
 	/**************** KISIMÍTJUK A TALAJT *****************/
 	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
@@ -565,15 +627,17 @@ void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv) {
 	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
 	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
 	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
-	int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION); 
+	glm::vec2 radiusPixelCoordinates = GetRadiusPixels(type);
+	int radiusPixelsX = radiusPixelCoordinates.x;
+	int radiusPixelsZ = radiusPixelCoordinates.y;
 
 	// kiolvassuk az m_heightMapData-ból az adott koordinátákohoz tartozó értéket
 	float totalHeight = 0.0f;
 	int count = 0;
 
 	// az adott sugár mentén kiolvassuk az értéket a m_heightMapData tömbből
-	for (int i = - 2 * radiusPixels; i <= radiusPixels; ++i) {
-		for (int j = radiusPixels; j <= 3 * radiusPixels; ++j) {
+	for (int i = -radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+		for (int j = -radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
 			// végigmenyünk a teljes sugár mentén
 			int x = uCoord + i;
 			int y = vCoord + j;
@@ -586,14 +650,18 @@ void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv) {
 		}
 	}
 
+	std::cout << "TOTAL HEIGHT: " << totalHeight << '\n';
+	std::cout << "COUNT " << count << '\n';
+
 	// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, 
 	// módosítjuk a megfelelő magasságértékeket az átlagra
 	if (count > 0) {
 		float averageHeight = totalHeight / static_cast<float>(count);
+		std::cout << "AVERAGE " << averageHeight << '\n';
 
 		// ismét végigmegyünk a heightmap tömbön, módosítunk minden értéket az átlagoltra
-		for (int i = -2 * radiusPixels; i <= radiusPixels; ++i) {
-			for (int j = radiusPixels; j <= 3 * radiusPixels; ++j) {
+		for (int i = -radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+			for (int j = -radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
 				// végigmegyünk a teljes sugár mentén
 				int x = uCoord + i;
 				int y = vCoord + j;
@@ -614,7 +682,7 @@ void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv) {
 	}
 }
 
-void CMyApp::PlaceConcreteUnderBuilding(glm::vec2 uv) {
+void CMyApp::PlaceConcreteUnderBuilding(glm::vec2 uv, BuildingType type) {
 	/******************************************************/
 	/**************** BETONT HELYEZÜNK LE *****************/
 	// meghatározzuk az adott U, V, illetve az épület sugarának pixelkoordinátáit
@@ -622,11 +690,13 @@ void CMyApp::PlaceConcreteUnderBuilding(glm::vec2 uv) {
 	int uCoord = static_cast<int>(uv.x * TABLE_RESOLUTION);
 	int vCoord = static_cast<int>(uv.y * TABLE_RESOLUTION);
 	// épület "sugara" esetén előbb le kell osztani az terrain scale-jével
-	int radiusPixels = static_cast<int>(FLAT_BUILDING_RADIUS / TABLE_SCALE.x * TABLE_RESOLUTION);
+	glm::vec2 radiusPixelCoordinates = GetRadiusPixels(type);
+	int radiusPixelsX = radiusPixelCoordinates.x;
+	int radiusPixelsZ = radiusPixelCoordinates.y;
 
 	// ismét végigmegyünk a splatmapen, kettő sugarú környezetben, majd módosítjuk a megfelelő értékeket
-	for (int i = - 2 * radiusPixels - 2; i <= radiusPixels + 2; ++i) {
-		for (int j = radiusPixels - 2; j <= 3 * radiusPixels + 2; ++j) {
+	for (int i = - radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {
+		for (int j = - radiusPixelsZ - 2; j <= radiusPixelsZ + 2; ++j) {
 			// végigmegyünk a teljes sugár mentén
 			int x = uCoord + i;
 			int y = vCoord + j;
@@ -689,11 +759,6 @@ GLint CMyApp::ul( const char* uniformName ) noexcept
 	return glGetUniformLocation( programID, uniformName );
 }
 
-// https://wiki.libsdl.org/SDL2/SDL_KeyboardEvent
-// https://wiki.libsdl.org/SDL2/SDL_Keysym
-// https://wiki.libsdl.org/SDL2/SDL_Keycode
-// https://wiki.libsdl.org/SDL2/SDL_Keymod
-
 void CMyApp::KeyboardDown(const SDL_KeyboardEvent& key)
 {	
 	if ( key.repeat == 0 ) // Először lett megnyomva
@@ -752,10 +817,11 @@ void CMyApp::MouseDown(const SDL_MouseButtonEvent& mouse)
 	delete[] texData;
 
 	if ((*m_data).z == 1) {
-		m_buildingPositionVector.push_back(glm::vec3(pos.x, height, pos.z)); // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
+		StoredBuilding current{ glm::vec3(pos.x, height, pos.z), selectedBuilding }; // eltároljuk a létrehozott épület típusát, illetve a lehelyezés pozícióit
+		m_buildingTypePositionVector.push_back(current);							 // hozzáadjuk a tárolt épület pozícióhoz az újonnan rajzolandó épület koordinátáit
 
-		FlattenTerrainUnderBuilding(glm::vec2(u, v)); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
-		PlaceConcreteUnderBuilding(glm::vec2(u, v));  // betont helyezünk le az épület alá
+		FlattenTerrainUnderBuilding(glm::vec2(u, v), selectedBuilding); // ha tudunk lehelyezni épületet, kisimítjuk alatta a talajt
+		PlaceConcreteUnderBuilding(glm::vec2(u, v), selectedBuilding);  // betont helyezünk le az épület alá
 	}
 }
 

@@ -100,6 +100,7 @@ FamilyHouse::FamilyHouse() : Building(FAMILY_HOUSE) {
 
 FamilyHouse::~FamilyHouse() {}
 
-MeshObject<Vertex> FamilyHouse::GetMesh() {
-	return meshCPU;
-}
+MeshObject<Vertex> FamilyHouse::GetMesh() { return meshCPU; }
+int FamilyHouse::GetRadiusX() const { return radiusX; }
+int FamilyHouse::GetRadiusY() const { return radiusY; }
+int FamilyHouse::GetRadiusZ() const { return radiusZ; }
