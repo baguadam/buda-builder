@@ -290,9 +290,11 @@ bool CMyApp::Init()
 
 	// kamera
 	m_camera.SetView(
-		glm::vec3(0.0,   250.0,  0.0),	       // honnan nézzük a színteret	     - eye
-		glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
-		glm::vec3(0.0,   1.0, 0.0));	       // felfelé mutató irány a világban - up
+		// glm::vec3(0.0,   250.0,  0.0),	       // honnan nézzük a színteret	     - eye
+		// glm::vec3(350.0, 150.0, -350.0),   // a színtér melyik pontját nézzük - at
+		glm::vec3(0.0, 0.0, 5.0),
+		glm::vec3(0.0, 0.0, 0.0),
+		glm::vec3(0.0, 1.0, 0.0));	       // felfelé mutató irány a világban - up
 
 	// FBO - kezdeti
 	CreateFrameBuffer(800, 600);
@@ -496,6 +498,25 @@ void CMyApp::RenderFlatAndBlockHouse(glm::vec3 buildingPosition, BuildingType ty
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
 
+	// - Fényforrások beállítása
+	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
+	glUniform4fv(ul("lightPos"), 1, glm::value_ptr(m_lightPos));
+
+	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
+	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
+	glUniform3fv(ul("Ls"), 1, glm::value_ptr(m_Ls));
+
+	glUniform1f(ul("lightConstantAttenuation"), m_lightConstantAttenuation);
+	glUniform1f(ul("lightLinearAttenuation"), m_lightLinearAttenuation);
+	glUniform1f(ul("lightQuadraticAttenuation"), m_lightQuadraticAttenuation);
+
+	// - Anyagjellemzők beállítása
+	glUniform3fv(ul("Ka"), 1, glm::value_ptr(m_Ka));
+	glUniform3fv(ul("Kd"), 1, glm::value_ptr(m_Kd));
+	glUniform3fv(ul("Ks"), 1, glm::value_ptr(m_Ks));
+
+	glUniform1f(ul("Shininess"), m_Shininess);
+
 	glDrawElements(GL_TRIANGLES,
 		m_flatHoustGPU.count,
 		GL_UNSIGNED_INT,
@@ -530,6 +551,25 @@ void CMyApp::RenderLittleHouse(glm::vec3 buildingPosition) {
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
 
+	// - Fényforrások beállítása
+	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
+	glUniform4fv(ul("lightPos"), 1, glm::value_ptr(m_lightPos));
+
+	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
+	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
+	glUniform3fv(ul("Ls"), 1, glm::value_ptr(m_Ls));
+
+	glUniform1f(ul("lightConstantAttenuation"), m_lightConstantAttenuation);
+	glUniform1f(ul("lightLinearAttenuation"), m_lightLinearAttenuation);
+	glUniform1f(ul("lightQuadraticAttenuation"), m_lightQuadraticAttenuation);
+
+	// - Anyagjellemzők beállítása
+	glUniform3fv(ul("Ka"), 1, glm::value_ptr(m_Ka));
+	glUniform3fv(ul("Kd"), 1, glm::value_ptr(m_Kd));
+	glUniform3fv(ul("Ks"), 1, glm::value_ptr(m_Ks));
+
+	glUniform1f(ul("Shininess"), m_Shininess);
+
 	glDrawElements(GL_TRIANGLES,
 		m_littleHouseGPU.count,
 		GL_UNSIGNED_INT,
@@ -561,6 +601,25 @@ void CMyApp::RenderFamilyHouse(glm::vec3 buildingPosition) {
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(matWorld));
 	glUniformMatrix4fv(ul("worldIT"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(matWorld))));
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_camera.GetViewProj()));
+
+	// - Fényforrások beállítása
+	glUniform3fv(ul("cameraPos"), 1, glm::value_ptr(m_camera.GetEye()));
+	glUniform4fv(ul("lightPos"), 1, glm::value_ptr(m_lightPos));
+
+	glUniform3fv(ul("La"), 1, glm::value_ptr(m_La));
+	glUniform3fv(ul("Ld"), 1, glm::value_ptr(m_Ld));
+	glUniform3fv(ul("Ls"), 1, glm::value_ptr(m_Ls));
+
+	glUniform1f(ul("lightConstantAttenuation"), m_lightConstantAttenuation);
+	glUniform1f(ul("lightLinearAttenuation"), m_lightLinearAttenuation);
+	glUniform1f(ul("lightQuadraticAttenuation"), m_lightQuadraticAttenuation);
+
+	// - Anyagjellemzők beállítása
+	glUniform3fv(ul("Ka"), 1, glm::value_ptr(m_Ka));
+	glUniform3fv(ul("Kd"), 1, glm::value_ptr(m_Kd));
+	glUniform3fv(ul("Ks"), 1, glm::value_ptr(m_Ks));
+
+	glUniform1f(ul("Shininess"), m_Shininess);
 
 	glDrawElements(GL_TRIANGLES,
 		m_familyHouseGPU.count,
@@ -601,20 +660,11 @@ glm::vec2 CMyApp::GetRadiusPixels(BuildingType type) {
 		break;
 	}
 
-	std::cout << "X: " << radiusX << '\n';
-	std::cout << "Z: " << radiusZ << '\n';
-
 	// belehelyezzük a sugarakat a megfelelő folbontású rendszerbe
 	float intermediateX = static_cast<float>(radiusX) / TABLE_SCALE.x;
 	float intermediateZ = static_cast<float>(radiusZ) / TABLE_SCALE.z;
 	int radiusPixelsX = static_cast<int>(intermediateX * TABLE_RESOLUTION);
 	int radiusPixelsZ = static_cast<int>(intermediateZ * TABLE_RESOLUTION);
-
-	std::cout << "Intermediate X: " << intermediateX << '\n';
-	std::cout << "Intermediate Z: " << intermediateZ << '\n';
-
-	std::cout << "radiusPixels X: " << radiusPixelsX << '\n';
-	std::cout << "radiusPixels Z: " << radiusPixelsZ << '\n';
 
 	return glm::vec2(radiusPixelsX, radiusPixelsZ);
 }
@@ -650,14 +700,10 @@ void CMyApp::FlattenTerrainUnderBuilding(glm::vec2 uv, BuildingType type) {
 		}
 	}
 
-	std::cout << "TOTAL HEIGHT: " << totalHeight << '\n';
-	std::cout << "COUNT " << count << '\n';
-
 	// ha volt count, akkor kiszámoljuk az átlagot magasságot, majd újra végigmegyünk a textúrán, 
 	// módosítjuk a megfelelő magasságértékeket az átlagra
 	if (count > 0) {
 		float averageHeight = totalHeight / static_cast<float>(count);
-		std::cout << "AVERAGE " << averageHeight << '\n';
 
 		// ismét végigmegyünk a heightmap tömbön, módosítunk minden értéket az átlagoltra
 		for (int i = -radiusPixelsX - 2; i <= radiusPixelsX + 2; ++i) {

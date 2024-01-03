@@ -67,15 +67,11 @@ void main()
 	
 	if ( lightPos.w == 0.0 ) // irány fényforrás (directional light)
 	{
-		// Irányfényforrás esetén minden pont ugyan abbóla az irányból van megvilágítva
 		ToLight	= lightPos.xyz;
-		// A távolságot 0-n hagyjuk, hogy az attenuáció ne változtassa a fényt
 	}
 	else				  // pont fényforrás (point light)
 	{
-		// Pontfényforrás esetén kkiszámoljuk a fragment pontból a fényforrásba mutató vektort, ...
 		ToLight	= lightPos.xyz - vs_out_pos;
-		// ... és a távolságot a fényforrástól
 		LightDistance = length(ToLight);
 	}
 	//  Normalizáljuk a fényforrásba mutató vektort
@@ -85,12 +81,9 @@ void main()
 	float Attenuation = 1.0 / ( lightConstantAttenuation + lightLinearAttenuation * LightDistance + lightQuadraticAttenuation * LightDistance * LightDistance);
 	
 	// Ambiens komponens
-	// Ambiens fény mindenhol ugyanakkora
 	vec3 Ambient = La * Ka;
 
 	// Diffúz komponens
-	// A diffúz fényforrásból érkező fény mennyisége arányos a fényforrásba mutató vektor és a normálvektor skaláris szorzatával
-	// és az attenuációval
 	float DiffuseFactor = max(dot(ToLight,normal), 0.0) * Attenuation;
 	vec3 Diffuse = DiffuseFactor * Ld * Kd;
 	
@@ -98,9 +91,7 @@ void main()
 	vec3 viewDir = normalize( cameraPos - vs_out_pos ); // A fragmentből a kamerába mutató vektor
 	vec3 reflectDir = reflect( -ToLight, normal ); // Tökéletes visszaverődés vektora
 	
-	// A spekuláris komponens a tökéletes visszaverődés iránya és a kamera irányától függ.
-	// A koncentráltsága cos()^s alakban számoljuk, ahol s a fényességet meghatározó paraméter.
-	// Szintén függ az attenuációtól.
+	// A spekuláris komponens
 	float SpecularFactor = pow(max(dot( viewDir, reflectDir) ,0.0), Shininess) * Attenuation;
 	vec3 Specular = SpecularFactor*Ls*Ks;
 
