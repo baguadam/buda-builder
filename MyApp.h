@@ -80,6 +80,9 @@ protected:
 	glm::vec2 GetRadiusPixels(BuildingType type);
 	void FlattenTerrainUnderBuilding(glm::vec2 uv, BuildingType type);
 	void PlaceConcreteUnderBuilding(glm::vec2 uv, BuildingType type);
+	// AABB
+	glm::vec3 GetBuildingDimensions(BuildingType type);
+	bool CheckBuildingCollisions(const glm::vec3 newPosition, BuildingType type);
 
 	// FBO-hoz szükséges változók
 	bool m_frameBufferCreated{ false };	// Korábban hoztunk már létre FBO-t?
