@@ -121,7 +121,8 @@ protected:
 	GLuint m_FBOID = 0;
 
 	// Fényforrás- ...
-	glm::vec4 m_lightPos = glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f );
+	glm::vec4 m_lightPos       = glm::vec4(0.0f, 0.0f,  1.0f, 0.0f);
+	glm::vec4 m_lightPosSecond = glm::vec4(-5.0f, 5.0f, 10.0f, 0.0f);
 
 	glm::vec3 m_La = glm::vec3(0.0, 0.0, 0.0 );
 	glm::vec3 m_Ld = glm::vec3(1.0, 1.0, 1.0 );
