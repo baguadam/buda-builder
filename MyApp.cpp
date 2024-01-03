@@ -444,11 +444,6 @@ void CMyApp::Render()
 		}
 	}
 
-	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), BLOCK_HOUSE);
-	// RenderFlatAndBlockHouse(glm::vec3(0.0, 0.0, 0.0), FLAT_HOUSE);
-	// RenderLittleHouse(glm::vec3(0.0, 0.0, 0.0));	
-	// RenderFamilyHouse(glm::vec3(0.0, 0.0, 0.0));
-
 	/***********************************/
 	/***********************************/
 	/***********************************/
@@ -792,6 +787,47 @@ void CMyApp::RenderGUI()
 		ImGui::SliderFloat( "Constant Attenuation", &m_lightConstantAttenuation, 0.001f, 2.0f );
 		ImGui::SliderFloat( "Linear Attenuation", &m_lightLinearAttenuation, 0.001f, 2.0f );
 		ImGui::SliderFloat( "Quadratic Attenuation", &m_lightQuadraticAttenuation, 0.001f, 2.0f );	
+	}
+	ImGui::End();
+
+
+	if (ImGui::Begin("Building chooser")) {
+		ImGui::SeparatorText("Buildings");
+
+		// A gombokra kattintva beállítjuk a megfelelő épülettípust
+		if (ImGui::Button("Flat House")) {
+			selectedBuilding = FLAT_HOUSE;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Family House")) {
+			selectedBuilding = FAMILY_HOUSE;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Little House")) {
+			selectedBuilding = LITTLE_HOUSE;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Block House")) {
+			selectedBuilding = BLOCK_HOUSE;
+		}
+
+		// A választott épület alapján kiíratjuk a megfelelőt
+		const char* buildingTypeText = "Unknown";
+		switch (selectedBuilding) {
+		case FLAT_HOUSE:
+			buildingTypeText = "Flat House";
+			break;
+		case FAMILY_HOUSE:
+			buildingTypeText = "Family House";
+			break;
+		case LITTLE_HOUSE:
+			buildingTypeText = "Little House";
+			break;
+		case BLOCK_HOUSE:
+			buildingTypeText = "Block House";
+			break;
+		}
+		ImGui::Text("Selected Building Type: %s", buildingTypeText);
 	}
 
 	ImGui::End();
